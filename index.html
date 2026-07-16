@@ -1,0 +1,2083 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>바이블퀴즈 (Bible Quiz)</title>
+  <script>
+    // Global Error Logger to assist remote debugging
+    window.addEventListener('error', function(e) {
+      alert("런타임 에러가 발견되었습니다!\n메시지: " + e.message + "\n소스: " + e.filename + "\n위치: " + e.lineno + ":" + e.colno);
+    });
+
+    // Intercept Babel compilation to show exact error details
+    window.addEventListener('DOMContentLoaded', () => {
+      const scripts = document.querySelectorAll('script[type="text/babel"]');
+      scripts.forEach(s => {
+        try {
+          if (window.Babel) {
+            window.Babel.transform(s.textContent, { presets: ['react'] });
+          }
+        } catch (err) {
+          alert("Babel 컴파일 에러가 발견되었습니다!\n메시지: " + err.message);
+        }
+      });
+    });
+  </script>
+  <!-- Tailwind CSS v3 CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            layton: {
+              dark: '#1e140a',
+              amber: '#e6a817',
+              gold: '#ffd700',
+              cream: '#f4ebd0',
+              brown: '#4a2f13',
+              lightbrown: '#8b5a2b',
+              parchment: '#fcf8eb',
+              ocean: '#1e3d59',
+              wave: '#17b978',
+            }
+          },
+          fontFamily: {
+            serif: ['BibleQuizFont', 'Lora', 'Playfair Display', 'Georgia', 'serif'],
+            sans: ['BibleQuizFont', 'Outfit', 'Inter', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Outfit:wght@100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Noto+Serif+KR:wght@300;400;700;900&family=Nanum+Myeongjo:wght@400;700;800&display=swap" rel="stylesheet">
+  
+  <!-- React, ReactDOM, Babel, and Canvas-Confetti -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <style>
+    /* Custom loaded local font */
+    @font-face {
+      font-family: 'BibleQuizFont';
+      src: url('font.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    /* Custom Scrollbar */
+    .parchment-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+    .parchment-scroll::-webkit-scrollbar-track {
+      background: rgba(74, 47, 19, 0.05);
+    }
+    .parchment-scroll::-webkit-scrollbar-thumb {
+      background: rgba(74, 47, 19, 0.3);
+      border-radius: 3px;
+    }
+    .parchment-scroll::-webkit-scrollbar-thumb:hover {
+      background: rgba(74, 47, 19, 0.5);
+    }
+
+    /* Antique paper texture overlay */
+    .paper-texture {
+      background-image: radial-gradient(circle, rgba(255,255,255,0.15) 0%, rgba(240,230,200,0.15) 100%),
+                        url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E");
+    }
+
+    /* Screen flicker & vintage film look */
+    @keyframes vignette-anim {
+      0%, 100% { opacity: 0.95; }
+      50% { opacity: 1; }
+    }
+    .vignette-effect {
+      box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.6);
+      pointer-events: none;
+      animation: vignette-anim 4s infinite alternate;
+    }
+
+    /* Shaking animation for denied actions */
+    @keyframes shake {
+      0%, 100% { transform: translate(0, 0); }
+      10%, 30%, 50%, 70%, 90% { transform: translate(-8px, 0); }
+      20%, 40%, 60%, 80% { transform: translate(8px, 0); }
+    }
+    .shake-animation {
+      animation: shake 0.5s ease-in-out;
+    }
+
+    /* Floating animation for Ark */
+    @keyframes float {
+      0% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-5px) rotate(1.5deg); }
+      100% { transform: translateY(0px) rotate(0deg); }
+    }
+    .float-animation {
+      animation: float 4s ease-in-out infinite;
+    }
+
+    /* Pulsing border animation */
+    @keyframes barrier-pulse {
+      0%, 100% { opacity: 0.2; box-shadow: 0 0 5px rgba(239, 68, 68, 0.4); }
+      50% { opacity: 0.8; box-shadow: 0 0 20px rgba(239, 68, 68, 0.8); }
+    }
+    .barrier-active {
+      animation: barrier-pulse 1s infinite;
+    }
+
+    /* Layton solved banner slide-in */
+    @keyframes solved-slide {
+      0% { transform: scale(0.3) rotate(-15deg); opacity: 0; }
+      70% { transform: scale(1.1) rotate(5deg); opacity: 1; }
+      100% { transform: scale(1.0) rotate(0deg); opacity: 1; }
+    }
+    .solved-banner {
+      animation: solved-slide 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    /* Rain drops animation */
+    @keyframes rain {
+      0% { transform: translateY(-10px) translateX(0px); opacity: 0; }
+      10% { opacity: 0.4; }
+      90% { opacity: 0.4; }
+      100% { transform: translateY(220px) translateX(-40px); opacity: 0; }
+    }
+    .rain-drop {
+      position: absolute;
+      background: linear-gradient(transparent, rgba(255, 255, 255, 0.4));
+      width: 1.5px;
+      height: 15px;
+      transform: rotate(15deg);
+      pointer-events: none;
+    }
+
+    /* Custom font styling overrides */
+    .font-layton-myeongjo {
+      font-family: 'BibleQuizFont', 'Nanum Myeongjo', 'Noto Serif KR', serif;
+    }
+
+    /* Falling food animation for Puzzle 2 */
+    @keyframes food-fall {
+      0% { transform: translateY(-50px) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(480px) rotate(360deg); opacity: 0; }
+    }
+    .falling-food-item {
+      position: absolute;
+      animation: food-fall 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+      pointer-events: none;
+    }
+
+    /* Detective bobbing when walking */
+    @keyframes char-bob {
+      0% { transform: translate(-50%, -100%) scaleY(1); }
+      50% { transform: translate(-50%, -106%) scaleY(0.97) translateY(-3px); }
+      100% { transform: translate(-50%, -100%) scaleY(1); }
+    }
+    .walk-bob {
+      animation: char-bob 0.25s infinite ease-in-out;
+    }
+    
+    /* Gentle bob for idle nodes */
+    @keyframes mini-float {
+      0% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+      100% { transform: translateY(0); }
+    }
+    .mini-float {
+      animation: mini-float 2.5s infinite ease-in-out;
+    }
+
+    /* Cloud movement animation */
+    @keyframes cloud-move {
+      0% { transform: translateX(-50px); }
+      100% { transform: translateX(390px); }
+    }
+
+    /* Page fade transition */
+    .fade-in {
+      animation: fadeIn 0.4s ease-out forwards;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.98); }
+      to { opacity: 1; transform: scale(1); }
+    }
+  </style>
+</head>
+<body class="bg-[#120d08] min-h-screen flex items-center justify-center p-4 font-sans select-none overflow-hidden">
+
+  <!-- Main Game Root -->
+  <div id="root"></div>
+
+  <!-- React Logic & UI Components -->
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // Simple Synth for Layton Sound Effects using Web Audio API
+    class AudioSynth {
+      constructor() {
+        this.ctx = null;
+        this.pongAudio = null;
+        this.overAudio = null;
+        this.vicAudio = null;
+      }
+
+      init() {
+        if (!this.ctx) {
+          this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+      }
+
+      playClick() {
+        this.init();
+        const ctx = this.ctx;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(600, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.05);
+
+        gain.gain.setValueAtTime(0.1, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start();
+        osc.stop(ctx.currentTime + 0.05);
+      }
+
+      playStep() {
+        this.init();
+        const ctx = this.ctx;
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(90, now);
+        osc.frequency.exponentialRampToValueAtTime(40, now + 0.08);
+        gain.gain.setValueAtTime(0.06, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.08);
+      }
+
+      playThud() {
+        this.init();
+        const ctx = this.ctx;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(100, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(30, ctx.currentTime + 0.2);
+
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start();
+        osc.stop(ctx.currentTime + 0.2);
+      }
+
+      playBarrier() {
+        this.init();
+        const ctx = this.ctx;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(440, ctx.currentTime);
+        osc.frequency.linearRampToValueAtTime(180, ctx.currentTime + 0.15);
+
+        gain.gain.setValueAtTime(0.2, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start();
+        osc.stop(ctx.currentTime + 0.15);
+      }
+
+      playSplit(level) {
+        this.init();
+        const ctx = this.ctx;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = 'sine';
+        const freq = 300 + (6 - level) * 120;
+        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(freq * 1.5, ctx.currentTime + 0.1);
+
+        gain.gain.setValueAtTime(0.12, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start();
+        osc.stop(ctx.currentTime + 0.1);
+      }
+
+      playConsume() {
+        this.init();
+        const ctx = this.ctx;
+        const now = ctx.currentTime;
+
+        const note = (freq, start, dur) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, start);
+          gain.gain.setValueAtTime(0.1, start);
+          gain.gain.exponentialRampToValueAtTime(0.001, start + dur);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(start);
+          osc.stop(start + dur);
+        };
+
+        note(659.25, now, 0.1); // E5
+        note(880.00, now + 0.08, 0.15); // A5
+      }
+
+      playSuccess() {
+        this.init();
+        const ctx = this.ctx;
+        const now = ctx.currentTime;
+
+        const playNote = (freq, start, duration) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, start);
+          
+          gain.gain.setValueAtTime(0.15, start);
+          gain.gain.exponentialRampToValueAtTime(0.01, start + duration - 0.02);
+          
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          
+          osc.start(start);
+          osc.stop(start + duration);
+        };
+
+        playNote(523.25, now, 0.15);       // C5
+        playNote(659.25, now + 0.12, 0.15); // E5
+        playNote(783.99, now + 0.24, 0.15); // G5
+        playNote(1046.50, now + 0.36, 0.4); // C6
+      }
+
+      playBuzz() {
+        this.init();
+        const ctx = this.ctx;
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(120, now);
+        osc.frequency.linearRampToValueAtTime(100, now + 0.3);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.3);
+      }
+
+      playPong() {
+        if (!this.pongAudio) {
+          this.pongAudio = new Audio('pong.wav');
+        }
+        this.pongAudio.currentTime = 0;
+        this.pongAudio.play().catch(e => console.warn("Pong audio play error:", e));
+      }
+
+      playOver() {
+        if (!this.overAudio) {
+          this.overAudio = new Audio('over.wav');
+        }
+        this.overAudio.currentTime = 0;
+        this.overAudio.play().catch(e => console.warn("Over audio play error:", e));
+      }
+
+      playVic() {
+        if (!this.vicAudio) {
+          this.vicAudio = new Audio('vic.wav');
+        }
+        this.vicAudio.currentTime = 0;
+        this.vicAudio.play().catch(e => console.warn("Vic audio play error:", e));
+      }
+    }
+
+    const synth = new AudioSynth();
+
+    // Rain Particle Component
+    function RainEffect() {
+      const drops = [];
+      for (let i = 0; i < 25; i++) {
+        const style = {
+          left: `${Math.random() * 100}%`,
+          top: `${Math.random() * -20}px`,
+          animation: `rain ${1 + Math.random() * 0.8}s linear infinite`,
+          animationDelay: `${Math.random() * 1.5}s`,
+        };
+        drops.push(<div key={i} className="rain-drop" style={style} />);
+      }
+      return <div className="absolute inset-0 overflow-hidden pointer-events-none z-10">{drops}</div>;
+    }
+
+    // PUZZLE 1 COMPONENT: NOAH'S ARK
+    function PuzzleNoah({ coins, onSpendCoins, onBack, onSolved }) {
+      const [gameStarted, setGameStarted] = useState(false);
+      const [lights, setLights] = useState([]);
+      const [isCompleted, setIsCompleted] = useState(false);
+      const [showHint, setShowHint] = useState(false);
+      const [hintUnlocked, setHintUnlocked] = useState(false);
+      const [showUnlockConfirm, setShowUnlockConfirm] = useState(false);
+      const [timeLeft, setTimeLeft] = useState(15);
+      const [isFailed, setIsFailed] = useState(false);
+      const [isSlowed, setIsSlowed] = useState(false);
+
+      // Spend 10 coins to slow down temptations for 3s
+      const handleSlowItemClick = () => {
+        if (isSlowed || coins < 10) return;
+        synth.playConsume();
+        onSpendCoins(10);
+        setIsSlowed(true);
+        setTimeout(() => {
+          setIsSlowed(false);
+        }, 3000);
+      };
+
+      // Start the game and initialize 20 lights
+      const handleStartGame = () => {
+        synth.playClick();
+        
+        const sizeClasses = ['text-lg', 'text-xl', 'text-2xl', 'text-3xl'];
+        const emojis = ['🧸', '🎮', '💵', '💎', '📱', '📺', '🍭', '🍩', '🍕', '🪙'];
+        const glowColors = [
+          'rgba(251, 191, 36, 0.4)', // Amber
+          'rgba(244, 63, 94, 0.4)',  // Rose
+          'rgba(14, 165, 233, 0.4)', // Sky
+          'rgba(168, 85, 247, 0.4)', // Purple
+          'rgba(34, 197, 94, 0.4)'   // Green
+        ];
+
+        const initialLights = Array.from({ length: 20 }, (_, i) => {
+          const sizeClass = sizeClasses[Math.floor(Math.random() * sizeClasses.length)];
+          const emoji = emojis[Math.floor(Math.random() * emojis.length)];
+          const x = Math.random() * 80 + 10; // 10% to 90%
+          const y = Math.random() * 70 + 15; // 15% to 85%
+          
+          let dx = (Math.random() - 0.5) * 1.8;
+          let dy = (Math.random() - 0.5) * 1.8;
+          const isSuperFast = i < 2; // Make the first 2 items super fast!
+          if (isSuperFast) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = 4.2; // Over double the speed (4.2px per frame)
+            dx = Math.cos(angle) * speed;
+            dy = Math.sin(angle) * speed;
+          }
+
+          const glowColor = glowColors[Math.floor(Math.random() * glowColors.length)];
+          const spriteIdx = Math.floor(Math.random() * 8); // 8 custom temptations from 1game1.png
+
+          return {
+            id: i,
+            x,
+            y,
+            dx,
+            dy,
+            sizeClass,
+            emoji,
+            spriteIdx,
+            glowColor,
+            isFading: false,
+            isSuperFast
+          };
+        });
+
+        setLights(initialLights);
+        setGameStarted(true);
+        setIsCompleted(false);
+        setTimeLeft(15);
+        setIsFailed(false);
+        setIsSlowed(false);
+      };
+
+      // Countdown Timer effect
+      useEffect(() => {
+        if (!gameStarted || isCompleted || isFailed) return;
+
+        const timerInterval = setInterval(() => {
+          setTimeLeft(prev => {
+            if (prev <= 1) {
+              clearInterval(timerInterval);
+              setIsFailed(true);
+              synth.playOver();
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+
+        return () => clearInterval(timerInterval);
+      }, [gameStarted, isCompleted, isFailed]);
+
+      // Animation frame for moving lights
+      useEffect(() => {
+        if (!gameStarted || lights.length === 0 || isCompleted || isFailed) return;
+
+        const interval = setInterval(() => {
+          setLights(prev => prev.map(light => {
+            if (light.isFading) return light;
+
+            const speedMultiplier = isSlowed ? 0.3 : 1.0;
+            let nextX = light.x + light.dx * speedMultiplier;
+            let nextY = light.y + light.dy * speedMultiplier;
+            let nextDx = light.dx;
+            let nextDy = light.dy;
+
+            // Bounce off horizontal bounds (10% to 90%)
+            if (nextX < 8 || nextX > 92) {
+              nextDx = -light.dx;
+              nextX = Math.max(8, Math.min(92, nextX));
+            }
+            // Bounce off vertical bounds (15% to 85%)
+            if (nextY < 12 || nextY > 88) {
+              nextDy = -light.dy;
+              nextY = Math.max(12, Math.min(88, nextY));
+            }
+
+            return {
+              ...light,
+              x: nextX,
+              y: nextY,
+              dx: nextDx,
+              dy: nextDy
+            };
+          }));
+        }, 40);
+
+        return () => clearInterval(interval);
+      }, [gameStarted, lights.length, isCompleted, isFailed, isSlowed]);
+
+      // Handle clicking a light icon
+      const handleLightClick = (id) => {
+        synth.playPong();
+        
+        // Trigger fade animation
+        setLights(prev => prev.map(l => l.id === id ? { ...l, isFading: true } : l));
+
+        // Remove from list after 250ms
+        setTimeout(() => {
+          setLights(prev => {
+            const next = prev.filter(l => l.id !== id);
+            // Check if this was the last light
+            if (next.length === 0) {
+              setIsCompleted(true);
+              synth.playVic();
+            }
+            return next;
+          });
+        }, 250);
+      };
+
+      // Unlock hint by spending 10 coins
+      const handleUnlockHint = () => {
+        if (coins >= 10) {
+          onSpendCoins(10);
+          setHintUnlocked(true);
+          setShowUnlockConfirm(false);
+          setShowHint(true);
+          synth.playSuccess();
+        } else {
+          alert('코인이 부족합니다! (10코인 필요)');
+          setShowUnlockConfirm(false);
+        }
+      };
+
+      return (
+        <div className="flex-1 flex flex-col justify-between relative bg-[#0a0705] text-[#fdf8eb] overflow-hidden select-none">
+          {/* Custom style injection for floating drift and radiant light */}
+          <style>{`
+            @keyframes float-drift-anim {
+              0% { transform: translateY(0px) rotate(0deg) scale(1); }
+              100% { transform: translateY(-6px) rotate(6deg) scale(1.05); }
+            }
+            .animate-float-drift {
+              animation: float-drift-anim 2.5s ease-in-out infinite alternate;
+            }
+            @keyframes expand-light-effect {
+              0% {
+                transform: translate(-50%, -50%) scale(0);
+                opacity: 0;
+              }
+              40% {
+                opacity: 0.85;
+              }
+              100% {
+                transform: translate(-50%, -50%) scale(7);
+                opacity: 1;
+              }
+            }
+            .animate-expand-light {
+              animation: expand-light-effect 3s cubic-bezier(0.1, 0.7, 0.2, 1) forwards;
+            }
+            .light-card-shadow {
+              box-shadow: 0 0 25px rgba(255, 215, 0, 0.25), inset 0 0 15px rgba(255, 255, 255, 0.4);
+            }
+          `}</style>
+
+
+          {/* MAIN GAME CONTAINER AREA */}
+          <div className="flex-1 relative overflow-hidden bg-black w-full h-full bg-cover bg-center bg-no-repeat" style={{ backgroundImage: "url('genesis_bg.png')" }}>
+
+            {/* PHASE 1: GAME START INTRO CARD */}
+            {!gameStarted && (
+              <div className="absolute inset-0 bg-[#160f0a]/95 flex flex-col justify-between p-6 z-30 fade-in">
+                <div className="absolute inset-4 border border-layton-gold/20 rounded-xl pointer-events-none"></div>
+                
+                <div className="mt-4 text-center z-10">
+                  <span className="text-3xl block filter drop-shadow">💡</span>
+                  <h2 className="font-layton-myeongjo font-black text-base text-layton-amber mt-2">
+                    1스테이지: 빛과 어둠의 분리
+                  </h2>
+                  <p className="font-layton-myeongjo text-[9px] text-[#eddcb9] mt-1">
+                    거꾸로 탐정단 제1막: 창세기
+                  </p>
+                </div>
+
+                <div className="my-2 p-3 bg-[#26180c]/60 rounded-xl border border-layton-gold/10 text-left font-layton-myeongjo z-10">
+                  <p className="text-[10px] text-layton-cream leading-relaxed break-keep">
+                    태초의 지구는 온통 어둡고 혼돈 상태였습니다. 
+                    하지만 지금 스크린에는 우리를 유혹하는 수많은 <strong>'가짜 유혹의 빛'</strong>들이 둥둥 떠다닙니다.
+                  </p>
+                  <div className="mt-2.5 p-2 bg-black/40 rounded-lg border border-red-500/20 text-[9px] text-red-300 leading-tight">
+                    <strong>⚠️ 안티크리에이티브(역발상) 규칙:</strong><br />
+                    보통 게임은 빛을 모으지만, 이 게임은 <strong>'모든 가짜 빛을 터치해 끄는 것'</strong>이 목표입니다!
+                  </div>
+                </div>
+
+                <div className="mb-4 z-10">
+                  <button
+                    onClick={handleStartGame}
+                    className="w-full py-2.5 bg-gradient-to-b from-[#e7b85e] to-[#ab7418] hover:from-[#f7cb75] hover:to-[#be8420] text-[#2c1a0c] font-black font-layton-myeongjo text-xs rounded-xl border-2 border-[#ffe8b5] shadow-lg transition-all duration-200 hover:scale-[1.02] active:scale-95"
+                  >
+                    수수께끼 시작하기
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* PHASE 2: FLOATING LIGHT ICONS GAMEPLAY */}
+            {gameStarted && !isCompleted && !isFailed && (
+              <div className="absolute inset-0 w-full h-full relative">
+                {/* Hint Floating Button */}
+                <button
+                  onClick={() => {
+                    synth.playClick();
+                    if (hintUnlocked) {
+                      setShowHint(true);
+                    } else {
+                      setShowUnlockConfirm(true);
+                    }
+                  }}
+                  className="absolute top-4 left-4 bg-black/60 border border-stone-800 text-[#e7b85e] hover:text-yellow-300 text-[8px] font-layton-myeongjo font-bold px-3 py-1 rounded-full z-20 flex items-center gap-0.5"
+                >
+                  💡 힌트
+                </button>
+
+                {/* Slow Motion Item Button */}
+                <button
+                  onClick={handleSlowItemClick}
+                  disabled={isSlowed || coins < 10}
+                  className={`absolute top-4 bg-black/60 border ${
+                    isSlowed ? 'border-sky-500 text-sky-400 animate-pulse' : 'border-stone-800 text-sky-300 hover:text-sky-200'
+                  } text-[8px] font-layton-myeongjo font-bold px-2.5 py-1 rounded-full z-20 flex items-center gap-0.5 transition-all ${
+                    (isSlowed || coins < 10) ? 'opacity-40 cursor-not-allowed' : 'active:scale-95'
+                  }`}
+                  style={{ left: '72px' }}
+                >
+                  🌀 {isSlowed ? '슬로우 중 (3초)' : '슬로우 (10🪙)'}
+                </button>
+
+                {/* Dark Chaos Background Hint overlay */}
+                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 pointer-events-none z-10">
+                  <span className="bg-black/60 border border-stone-800 text-stone-400 text-[8px] font-layton-myeongjo font-bold px-3 py-1 rounded-full whitespace-nowrap">
+                    남은 가짜 빛: <span className="text-yellow-400 font-extrabold">{lights.length}</span>개
+                  </span>
+                </div>
+
+                {/* Timer Display overlay in top right */}
+                <div className={`absolute top-4 right-4 z-20 ${timeLeft <= 3 ? 'text-red-500 font-extrabold scale-110' : 'text-stone-300'} text-[8px] font-layton-myeongjo flex items-center gap-1 transition-all duration-200`}>
+                  <span className={`${timeLeft <= 3 ? 'animate-bounce' : ''}`}>⏱️</span>
+                  <span className="bg-black/60 border border-stone-800 px-2 py-0.5 rounded-full">
+                    <span className="text-xs font-black mr-0.5">{timeLeft}</span>초
+                  </span>
+                </div>
+
+                {/* Screen blink warning overlay when <= 3 seconds left */}
+                {timeLeft <= 3 && !isCompleted && !isFailed && (
+                  <div className="absolute inset-0 bg-red-600/10 border-4 border-red-600/40 pointer-events-none z-10 animate-[pulse_0.4s_infinite]" />
+                )}
+
+                {/* Render floating lights */}
+                {lights.map((light) => (
+                  <div
+                    key={light.id}
+                    onClick={() => handleLightClick(light.id)}
+                    className={`absolute select-none cursor-pointer flex items-center justify-center rounded-full ${light.sizeClass} animate-float-drift hover:scale-110 active:scale-90 transition-transform`}
+                    style={{
+                      left: `${light.x}%`,
+                      top: `${light.y}%`,
+                      transform: 'translate(-50%, -50%)',
+                      transition: 'opacity 0.25s ease, transform 0.25s ease',
+                      opacity: light.isFading ? 0 : 1,
+                      width: '68px',
+                      height: '68px',
+                      background: `radial-gradient(circle, ${light.glowColor} 0%, transparent 70%)`,
+                      filter: light.isSuperFast ? 'drop-shadow(0 0 16px rgba(255,215,0,0.95))' : 'drop-shadow(0 0 10px rgba(255,255,255,0.75))',
+                    }}
+                  >
+                    <div 
+                      className="bg-cover bg-center"
+                      style={{
+                        width: '45px',
+                        height: '60px',
+                        backgroundImage: "url('1game1.png')",
+                        backgroundSize: '400% 200%',
+                        backgroundPosition: `${(light.spriteIdx % 4) * 33.333}% ${Math.floor(light.spriteIdx / 4) * 100}%`,
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* PHASE 2.5: TIME OUT FAILURE CARD */}
+            {isFailed && (
+              <div className="absolute inset-0 bg-black/95 z-30 flex flex-col items-center justify-center p-6 fade-in">
+                <div className="absolute inset-4 border border-red-500/20 rounded-xl pointer-events-none"></div>
+                
+                <div className="w-full max-w-[280px] bg-layton-parchment rounded-2xl border-4 border-red-950 p-5 text-center shadow-2xl relative solved-banner flex flex-col justify-between my-auto">
+                  <div>
+                    <span className="text-3xl block filter drop-shadow animate-bounce mb-3">⏳</span>
+                    <span className="text-[7px] bg-red-700 text-white font-black px-2 py-0.5 rounded-full tracking-wider uppercase font-sans">
+                      TIME OUT
+                    </span>
+                    
+                    <h3 className="font-layton-myeongjo font-black text-xs text-red-950 mt-2 mb-3 tracking-wide">
+                      시간 초과!
+                    </h3>
+                    
+                    <p className="font-layton-myeongjo text-[10px] text-layton-lightbrown leading-relaxed mb-4 break-keep font-semibold">
+                      태초의 혼돈 속에서 가짜 유혹의 빛들이 너무나 빠르게 퍼졌습니다. 어둠을 다시 조화롭게 만들어 볼까요?
+                    </p>
+                  </div>
+
+                  <div>
+                    <button
+                      onClick={handleStartGame}
+                      className="w-full py-2.5 bg-gradient-to-b from-[#e7b85e] to-[#ab7418] hover:from-[#f7cb75] hover:to-[#be8420] text-[#2c1a0c] font-black font-layton-myeongjo text-xs rounded-xl border-2 border-[#ffe8b5] shadow-lg active:scale-95 transition-all duration-200"
+                    >
+                      다시 도전하기 🔄
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* PHASE 3: COMPLETED TRUE LIGHT & BIBLE VERSE CARD */}
+            {isCompleted && (
+              <div className="absolute inset-0 bg-[#000000] z-30 flex flex-col items-center justify-center p-6 overflow-hidden">
+                
+                {/* Expanding Creation Light effect from center */}
+                <div 
+                  className="absolute w-20 h-20 rounded-full bg-gradient-to-r from-white via-[#ffeaa7] to-transparent animate-expand-light z-0"
+                  style={{ left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}
+                ></div>
+
+                {/* Bible Verse Card overlay */}
+                <div className="w-full max-w-[280px] bg-[#fcf8eb] rounded-2xl border-4 border-layton-brown p-4 shadow-2xl text-center solved-banner z-10 fade-in light-card-shadow flex flex-col justify-between my-auto">
+                  
+                  <div>
+                    <span className="text-3xl block filter drop-shadow animate-[mini-float_3s_infinite_alternate] mb-2">🌅</span>
+                    <span className="text-[7px] bg-yellow-600 text-white font-black px-2 py-0.2 rounded-full tracking-wider uppercase font-sans">
+                      STAGE COMPLETE
+                    </span>
+                    
+                    <h3 className="font-layton-myeongjo font-black text-xs text-[#2c1a0c] mt-2 mb-3 tracking-wide">
+                      빛과 어둠의 분리
+                    </h3>
+
+                    {/* Bible Verse in beautiful Myeongjo Font */}
+                    <div className="p-3 bg-[#ebdcb9]/40 border border-[#8b5a2b]/20 rounded-xl my-2">
+                      <p className="font-layton-myeongjo text-[11px] font-extrabold text-[#3a200c] leading-relaxed break-keep">
+                        "하나님이 이르시되 빛이 있으라 하시니 빛이 있었고"
+                      </p>
+                      <span className="font-layton-myeongjo text-[8px] text-[#8b5a2b] font-bold mt-1 block">
+                        (창세기 1:3)
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mt-4">
+                    <button
+                      onClick={() => {
+                        synth.playSuccess();
+                        onSolved('puzzle-001');
+                      }}
+                      className="w-full py-2 bg-gradient-to-b from-[#e7b85e] to-[#ab7418] hover:from-[#f7cb75] hover:to-[#be8420] text-[#2c1a0c] font-black font-layton-myeongjo text-xs rounded-xl border-2 border-[#ffe8b5] shadow-md transition-all duration-200 hover:scale-[1.02] active:scale-95"
+                    >
+                      다음 단계로 🧭
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+            )}
+
+          </div>
+
+          {/* ================= MODALS & OVERLAYS ================= */}
+
+          {/* Hint modal popup */}
+          {showHint && (
+            <div className="absolute inset-0 bg-black/60 flex items-center justify-center p-6 z-50 fade-in">
+              <div className="w-[280px] bg-layton-parchment rounded-2xl border-4 border-layton-brown p-4 text-center shadow-2xl relative solved-banner">
+                <span className="text-2xl block mb-1">💡</span>
+                <h3 className="font-layton-myeongjo font-black text-xs text-layton-dark mb-2">수수께끼 힌트</h3>
+                <p className="text-[10px] text-layton-lightbrown font-layton-myeongjo font-semibold leading-relaxed mb-4 break-keep">
+                  이 수수께끼는 '안티크리에이티브(역발상)' 규칙이 적용됩니다. 스크린 위를 둥둥 떠다니는 가짜 빛 아이콘(🧸, 💵, 📱 등) 20개를 모두 터치해 꺼서 완벽한 어둠을 만드세요!
+                </p>
+                <button
+                  onClick={() => {
+                    synth.playClick();
+                    setShowHint(false);
+                  }}
+                  className="w-full py-1.5 bg-[#4a2f13] hover:bg-[#5e3c1b] text-layton-cream text-xs font-bold rounded-xl border border-layton-gold/20 active:scale-95"
+                >
+                  확인
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Hint Unlock Confirmation Modal */}
+          {showUnlockConfirm && (
+            <div className="absolute inset-0 bg-black/60 flex items-center justify-center p-6 z-50 fade-in">
+              <div className="w-[280px] bg-layton-parchment rounded-2xl border-4 border-layton-brown p-4 text-center shadow-2xl relative solved-banner">
+                <span className="text-2xl block mb-1">🪙</span>
+                <h3 className="font-layton-myeongjo font-black text-xs text-layton-dark mb-1">힌트 잠금 해제</h3>
+                <p className="text-[9px] text-[#8b5a2b] font-bold mb-3">10 코인이 필요합니다</p>
+                <p className="text-[10px] text-layton-lightbrown font-layton-myeongjo leading-normal mb-4">
+                  보유 코인: <span className="font-bold text-yellow-600">{coins}개</span><br />
+                  10코인을 소모하여 힌트를 보시겠습니까?
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      synth.playClick();
+                      setShowUnlockConfirm(false);
+                    }}
+                    className="flex-1 py-1.5 bg-stone-300 hover:bg-stone-400 text-stone-800 text-[10px] font-bold rounded-xl border border-stone-400 active:scale-95"
+                  >
+                    취소
+                  </button>
+                  <button
+                    onClick={handleUnlockHint}
+                    className="flex-1 py-1.5 bg-gradient-to-b from-[#e7b85e] to-[#ab7418] hover:from-[#f7cb75] hover:to-[#be8420] text-[#2c1a0c] text-[10px] font-bold rounded-xl border border-[#ffe8b5] active:scale-95"
+                  >
+                    잠금 해제
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+        </div>
+      );
+    }
+
+
+    function PuzzleFiveLoaves({ coins, onSpendCoins, onBack, onSolved }) {
+      const [questionIndex, setQuestionIndex] = useState(0);
+      const [gauge, setGauge] = useState(0);
+      const [showWarningModal, setShowWarningModal] = useState(false);
+      const [shakeScreen, setShakeScreen] = useState(false);
+      const [showHint, setShowHint] = useState(false);
+      const [hintUnlocked, setHintUnlocked] = useState(false);
+      const [showUnlockConfirm, setShowUnlockConfirm] = useState(false);
+      const [fallingItems, setFallingItems] = useState([]);
+
+      const onSolvedRef = useRef(onSolved);
+      useEffect(() => {
+        onSolvedRef.current = onSolved;
+      }, [onSolved]);
+
+      const quizQuestions = [
+        {
+          q: "예수님이 5천 명을 먹이실 때 사용한 보리떡은 몇 개인가요?",
+          options: ["5개", "50개", "5천 개"],
+          correctIdx: 0,
+          hint: "보리떡 5개와 물고기 2마리를 가져온 소년의 성경 기록을 생각해보세요."
+        },
+        {
+          q: "다 먹고 남은 조각은 12광주리에 가득 찼다. (O / X)",
+          options: ["O (그렇다)", "X (아니다)"],
+          correctIdx: 0,
+          hint: "기적의 떡을 다 먹은 후 남은 부스러기가 12바구니에 가득 찼는지 성경 기록을 찾아보세요."
+        },
+        {
+          q: "예수님이 오병이어 기적으로 먹인 사람의 수는 여자와 어린아이 외에 총 몇 명인가요?",
+          options: ["5,000명", "5명", "500,000명"],
+          correctIdx: 0,
+          hint: "오병이어로 먹은 남자 어른의 수를 생각해보세요. 오병이어의 이름 뜻도 힌트입니다."
+        },
+        {
+          q: "오병이어 기적에 쓰인 물고기는 총 몇 마리인가요?",
+          options: ["2마리", "22마리", "2만 마리"],
+          correctIdx: 0,
+          hint: "오병이어(五餠二魚)에서 '이魚'는 물고기가 몇 마리인지 알려줍니다."
+        },
+        {
+          q: "이 오병이어의 도시락을 처음 예수님께 드린 사람은 누구인가요?",
+          options: ["한 어린아이", "베드로 사도", "빌라도 총독"],
+          correctIdx: 0,
+          hint: "예수님의 손에 보리떡 5개와 물고기 2마리가 든 작은 도시락을 바쳤던 어린 헌신자를 생각해보세요."
+        }
+      ];
+
+      const handleRestart = () => {
+        setQuestionIndex(0);
+        setGauge(0);
+        setShowWarningModal(false);
+        setShakeScreen(false);
+        setShowHint(false);
+        setShowUnlockConfirm(false);
+        setFallingItems([]);
+      };
+
+      const handleHintClick = () => {
+        if (hintUnlocked) {
+          setShowHint(true);
+        } else {
+          synth.playClick();
+          setShowUnlockConfirm(true);
+        }
+      };
+
+      const handleConfirmUnlock = () => {
+        if (coins >= 10) {
+          onSpendCoins(10);
+          setHintUnlocked(true);
+          setShowUnlockConfirm(false);
+          setShowHint(true);
+        } else {
+          synth.playBarrier();
+          alert(`코인이 부족합니다!\n(필요 코인: 10개, 보유 코인: ${coins}개)`);
+          setShowUnlockConfirm(false);
+        }
+      };
+
+      const handleOptionClick = (idx) => {
+        const currentQ = quizQuestions[questionIndex];
+        
+        if (idx === currentQ.correctIdx) {
+          // Player selected the correct biblical answer (Winning choice!)
+          synth.playConsume();
+          const nextGauge = Math.min(100, gauge + 20);
+          setGauge(nextGauge);
+
+          // Trigger falling food icons shower animation
+          const items = Array.from({ length: 15 }).map((_, i) => ({
+            id: Date.now() + i + Math.random(),
+            x: Math.random() * 90 + 5,
+            type: Math.random() > 0.5 ? 'bread' : 'fish',
+            delay: Math.random() * 0.4
+          }));
+          setFallingItems(prev => [...prev, ...items]);
+
+          // Clear completed falling items after animation duration (1.6s)
+          setTimeout(() => {
+            setFallingItems(prev => prev.filter(item => !items.includes(item)));
+          }, 1800);
+
+          // Proceed to next question
+          if (nextGauge >= 100) {
+            // Success!
+            setTimeout(() => {
+              onSolvedRef.current('puzzle-002');
+            }, 800);
+          } else {
+            // Go to next question
+            setQuestionIndex(prev => (prev + 1) % quizQuestions.length);
+          }
+        } else {
+          // Player selected an incorrect biblical answer (Losing choice!)
+          synth.playBarrier();
+          setShakeScreen(true);
+          setTimeout(() => setShakeScreen(false), 500);
+          setGauge(prev => Math.max(0, prev - 20));
+          setShowWarningModal(true);
+        }
+      };
+
+      const currentQuestion = quizQuestions[questionIndex];
+
+      return (
+        <div className={`flex-1 flex flex-col fade-in transition-transform duration-300 ${
+          shakeScreen ? 'shake-animation' : ''
+        }`}>
+          {/* Story Parchment Textbox */}
+          <div className="relative p-2.5 bg-layton-parchment border-b-2 border-layton-brown/30 flex-none z-10 shadow-inner">
+            <div className="bg-[#f5ebd3]/80 p-2 rounded-lg border border-[#e5d4ab] shadow-sm text-layton-dark text-center">
+              <p className="font-layton-myeongjo text-[11px] leading-relaxed font-bold break-keep">
+                제자들의 배가 너무 고픕니다! 올바른 성경 정답을 맞춰 보리떡과 물고기가 불어나도록 기적을 부려주세요. 
+                <span className="text-red-700 font-extrabold mx-1">틀린 오답</span>을 고르면 떡이 사라지고 점수가 깎이니 주의하세요!
+              </p>
+            </div>
+          </div>
+
+          {/* Interactive Game Layout Frame */}
+          <div className="flex-1 bg-[#25170d]/90 p-3 flex flex-col justify-between items-center relative overflow-hidden">
+            
+            {/* Falling food animated items renderer */}
+            {fallingItems.map(item => (
+              <div 
+                key={item.id}
+                className="falling-food-item z-30 text-2xl drop-shadow-md"
+                style={{
+                  left: `${item.x}%`,
+                  animationDelay: `${item.delay}s`
+                }}
+              >
+                {item.type === 'bread' ? '🍞' : '🐟'}
+              </div>
+            ))}
+
+            {/* Top Stats Box (12 baskets progress bar) */}
+            <div className="w-full bg-[#f4ebd0] border-2 border-layton-gold rounded-xl p-2 mb-2 flex items-center justify-between shadow-md z-10">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xl">🧺</span>
+                <span className="font-layton-myeongjo text-xs font-black text-layton-brown">12광주리 게이지</span>
+              </div>
+              <div className="flex-1 mx-3 bg-[#4a2f13]/20 h-3 rounded-full overflow-hidden border border-[#4a2f13]/30">
+                <div 
+                  className="bg-gradient-to-r from-amber-500 to-yellow-400 h-full rounded-full transition-all duration-300"
+                  style={{ width: `${gauge}%` }}
+                ></div>
+              </div>
+              <div className="text-[11px] font-black text-layton-brown font-serif">{gauge}%</div>
+            </div>
+
+            {/* Blackboard Board Frame containing Quiz */}
+            <div className="w-full flex-1 flex flex-col justify-between bg-[#0b3c2a] border-4 border-layton-brown rounded-2xl p-4 shadow-inner relative z-10">
+              
+              {/* Gold outline border inside blackboard */}
+              <div className="absolute inset-1 border border-emerald-600 rounded-xl pointer-events-none opacity-40"></div>
+
+              {/* Disciple Avatar Box */}
+              <div className="flex items-center gap-3 bg-emerald-950/60 border border-emerald-800 rounded-xl p-2.5">
+                {/* Cute SVG Face representing hungry disciple */}
+                <div className="w-11 h-11 rounded-full bg-[#dfb973] border-2 border-layton-gold flex items-center justify-center text-2xl relative shadow-md">
+                  👨‍🌾
+                  {/* Hunger drool or drop effect */}
+                  <span className="absolute -bottom-0.5 -right-0.5 text-[10px]">💧</span>
+                </div>
+                <div className="flex-1 text-left">
+                  <span className="text-[8px] bg-amber-500 text-[#2c1a0c] font-black px-1.5 py-0.2 rounded-full font-sans uppercase">Question {questionIndex + 1} / 5</span>
+                  <p className="text-[10px] text-emerald-200/90 font-bold font-layton-myeongjo mt-0.5">배고픈 예수님의 제자</p>
+                </div>
+              </div>
+
+              {/* Question Text */}
+              <div className="flex-1 flex items-center justify-center my-4 px-2">
+                <p className="text-center font-layton-myeongjo font-bold text-sm text-[#fdf8eb] leading-relaxed break-keep">
+                  "{currentQuestion.q}"
+                </p>
+              </div>
+
+              {/* Choices Options List */}
+              <div className="flex flex-col gap-2">
+                {currentQuestion.options.map((opt, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => handleOptionClick(idx)}
+                    className="w-full py-2.5 bg-gradient-to-b from-[#ebdcb9] to-[#c2af84] hover:from-[#fcf4dc] hover:to-[#dcd0ac] text-layton-dark font-black font-layton-myeongjo text-xs rounded-xl border-2 border-[#f2e7cb] shadow-[0_3px_5px_rgba(0,0,0,0.3)] active:scale-95 transition-all duration-150 text-center"
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+
+            </div>
+
+            {/* Bottom button controls */}
+            <div className="w-full flex justify-between items-center mt-3.5 px-1 z-10">
+              <button
+                onClick={handleHintClick}
+                className="bg-gradient-to-b from-[#b17d3b] to-[#7f511c] text-[#fcf5e3] border border-layton-gold/60 font-semibold px-4 py-1.5 rounded-full text-xs font-layton-myeongjo shadow-md active:scale-95 transition-all"
+              >
+                💡 힌트 보기 {hintUnlocked ? '(해제됨)' : '(🪙 10)'}
+              </button>
+
+              <button
+                onClick={handleRestart}
+                className="bg-gradient-to-b from-[#8f8070] to-[#5a4e42] text-[#fcf5e3] border border-stone-400/40 font-semibold px-4 py-1.5 rounded-full text-xs font-layton-myeongjo shadow-md active:scale-95 transition-all"
+              >
+                🔄 다시 풀기
+              </button>
+            </div>
+
+          </div>
+
+          {/* Warning Modal Overlay ("땡! 틀렸습니다.") */}
+          {showWarningModal && (
+            <div className="absolute inset-0 bg-black/85 backdrop-blur-[2px] z-50 flex items-center justify-center p-5">
+              <div className="bg-layton-parchment rounded-2xl border-4 border-red-700 p-5 shadow-2xl w-full max-w-[300px] flex flex-col items-center solved-banner text-center">
+                <span className="text-3xl mb-1.5">📖</span>
+                <h3 className="font-layton-myeongjo font-black text-sm text-red-800 mb-2">
+                  땡! 틀렸습니다.
+                </h3>
+                <p className="text-layton-dark text-[11px] leading-relaxed font-medium font-layton-myeongjo mb-4 break-keep">
+                  성경 기록과 다른 잘못된 대답입니다! 
+                  제자들에게 풍성한 오병이어의 기적을 베풀기 위해 다시 잘 생각하셔서 **성경 속 진짜 정답**을 골라주세요!
+                </p>
+                <button
+                  onClick={() => setShowWarningModal(false)}
+                  className="w-full py-2 bg-gradient-to-b from-red-700 to-red-950 hover:from-red-600 hover:to-red-800 text-[#fff5db] text-xs font-bold rounded-xl border border-red-500 shadow-md active:scale-95 transition-colors font-layton-myeongjo"
+                >
+                  다시 도전하기 🔄
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Hint Overlay */}
+          {showHint && (
+            <div className="absolute inset-0 bg-layton-dark/80 backdrop-blur-[2px] z-40 flex items-center justify-center p-5">
+              <div className="bg-layton-parchment rounded-xl border-4 border-layton-amber p-4 shadow-2xl w-full max-w-[300px] flex flex-col items-center solved-banner">
+                <div className="w-10 h-10 rounded-full bg-layton-amber flex items-center justify-center text-xl mb-2 text-layton-dark">💡</div>
+                <h3 className="font-layton-myeongjo font-black text-sm text-layton-brown mb-2 font-layton-myeongjo">수수께끼 힌트</h3>
+                <p className="text-layton-dark text-xs text-center leading-relaxed font-medium font-layton-myeongjo mb-4 break-keep font-layton-myeongjo">
+                  "{currentQuestion.hint}"
+                </p>
+                <button
+                  onClick={() => setShowHint(false)}
+                  className="w-full py-1.5 bg-layton-brown hover:bg-layton-lightbrown text-layton-cream text-xs font-bold rounded-lg border border-layton-gold transition-colors font-layton-myeongjo"
+                >
+                  돌아가기
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Hint Unlock Confirmation Modal */}
+          {showUnlockConfirm && (
+            <div className="absolute inset-0 bg-layton-dark/80 backdrop-blur-[2px] z-50 flex items-center justify-center p-5">
+              <div className="bg-layton-parchment rounded-xl border-4 border-layton-amber p-4 shadow-2xl w-full max-w-[280px] flex flex-col items-center solved-banner text-center">
+                <span className="text-3xl mb-1">🪙</span>
+                <h3 className="font-layton-myeongjo font-black text-sm text-layton-brown mb-2 font-layton-myeongjo">힌트 해제</h3>
+                <p className="text-layton-dark text-xs font-medium font-layton-myeongjo mb-4 break-keep font-layton-myeongjo">
+                  힌트를 해제하시겠습니까?<br />
+                  <span className="font-bold text-red-700">10 코인</span>이 소모됩니다.<br />
+                  <span className="text-[10px] text-stone-500 font-sans">(보유 코인: {coins}개)</span>
+                </p>
+                <div className="flex gap-2 w-full">
+                  <button
+                    onClick={() => setShowUnlockConfirm(false)}
+                    className="flex-1 py-1.5 bg-stone-300 hover:bg-stone-400 text-stone-800 text-xs font-bold rounded-lg border border-stone-400 transition-colors font-layton-myeongjo"
+                  >
+                    취소
+                  </button>
+                  <button
+                    onClick={handleConfirmUnlock}
+                    className="flex-1 py-1.5 bg-layton-brown hover:bg-layton-lightbrown text-layton-cream text-xs font-bold rounded-lg border border-layton-gold transition-colors font-layton-myeongjo shadow-md"
+                  >
+                    해제 (10🪙)
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // EXPLORE MAP COMPONENT (Mario-style)
+    function PuzzleMap({ puzzlesList, completedPuzzles, coins, activePuzzleId, isBgmPlaying, onToggleBgm, profileGender, onSelectPuzzle, onBack }) {
+      const startNode = { id: 'start', x: 45, y: 440 };
+      const nodes = [
+        startNode,
+        { id: 'puzzle-001', x: 90, y: 395, emoji: '💡', name: '1스테이지: 빛과 어둠의 분리', picarats: 30 },
+        { id: 'puzzle-002', x: 235, y: 310, emoji: '🧺', name: '오병이어: 나누면 커지는 기적', picarats: 40 },
+        { id: 'puzzle-003', x: 100, y: 210, emoji: '🧱', name: '여리고성 무너뜨리기', picarats: 50, locked: true },
+        { id: 'puzzle-004', x: 230, y: 110, emoji: '🐳', name: '요나와 큰 물고기', picarats: 35, locked: true },
+      ];
+
+      // Find initial character position based on activePuzzleId or completed progress
+      const getInitialNode = () => {
+        if (activePuzzleId) {
+          const match = nodes.find(n => n.id === activePuzzleId);
+          if (match) return match;
+        }
+        // Fallback to last unsolved, or start
+        const unsolved = puzzlesList.find(p => !completedPuzzles.includes(p.id));
+        if (unsolved) {
+          const match = nodes.find(n => n.id === unsolved.id);
+          if (match) return match;
+        }
+        return startNode;
+      };
+      const initialNode = getInitialNode();
+      const [charPos, setCharPos] = useState({ x: initialNode.x, y: initialNode.y });
+      const [isWalking, setIsWalking] = useState(false);
+      const [activeBubble, setActiveBubble] = useState(null);
+
+      // Play footstep click interval during walking state
+      useEffect(() => {
+        if (!isWalking) return;
+        
+        synth.playStep();
+        const intervalId = setInterval(() => {
+          synth.playStep();
+        }, 220);
+
+        return () => clearInterval(intervalId);
+      }, [isWalking]);
+
+      const handleNodeClick = (node) => {
+        if (isWalking) return;
+        setActiveBubble(null);
+
+        if (charPos.x === node.x && charPos.y === node.y) {
+          // Already there, open bubble directly
+          if (node.id !== 'start') {
+            setActiveBubble(node);
+          }
+          return;
+        }
+
+        // Trigger smooth walk
+        setIsWalking(true);
+        setCharPos({ x: node.x, y: node.y });
+
+        // Wait for walking transition (1.4s) to complete
+        setTimeout(() => {
+          setIsWalking(false);
+          if (node.id !== 'start') {
+            setActiveBubble(node);
+          }
+        }, 1400);
+      };
+
+      return (
+        <div className="flex-1 flex flex-col bg-layton-parchment z-10 fade-in select-none relative overflow-hidden">
+          
+          {/* Header */}
+          <div className="bg-[#36200c] border-b-2 border-layton-gold p-3 flex justify-between items-center text-center z-10">
+            <button 
+              onClick={onBack}
+              className="text-xs text-layton-amber font-layton-myeongjo font-bold hover:text-yellow-400 transition-colors"
+            >
+              ◀ 메인메뉴
+            </button>
+            <h2 className="text-layton-cream font-layton-myeongjo font-bold text-sm">성경 탐험 지도</h2>
+            <div className="flex items-center gap-2 text-[9px] text-layton-amber font-sans">
+              <button
+                onClick={onToggleBgm}
+                className="text-xs hover:scale-110 active:scale-90 transition-transform mr-1"
+                title="배경음악 켜기/끄기"
+              >
+                {isBgmPlaying ? '🎵' : '🔇'}
+              </button>
+              <span className="text-stone-500">|</span>
+              <span className="text-yellow-400 font-bold text-[10px]">🪙 {coins}</span>
+              <span>|</span>
+              <span>총 <span className="font-bold text-[11px] text-layton-gold">{completedPuzzles.length * 30}</span> P</span>
+            </div>
+          </div>
+
+          {/* Subheader hint */}
+          <div className="bg-[#fdf8eb] border-b border-layton-brown/15 py-1 px-3 text-center text-[10px] text-layton-brown font-layton-myeongjo font-bold z-10 shadow-sm leading-tight break-keep">
+            📍 지도의 아이콘을 터치하여 꼬마 탐정을 이동시키고 수수께끼를 해결하세요!
+          </div>
+
+          {/* Map Content Canvas Area */}
+          <div className="flex-1 relative bg-[#eedbb5] overflow-hidden shadow-inner">
+            
+            {/* Scenic Gradients representing sand sky overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-[#dfb983]/30 via-transparent to-[#bae6fd]/25 pointer-events-none z-0"></div>
+
+                     {/* Start Flag Sign */}
+            <div 
+              className="absolute text-center flex flex-col items-center pointer-events-auto cursor-pointer"
+              style={{ left: `${startNode.x}px`, top: `${startNode.y}px`, transform: 'translate(-50%, -50%)' }}
+              onClick={() => handleNodeClick(startNode)}
+            >
+              <span className="text-xl drop-shadow-md">🏁</span>
+              <span className="text-[7px] bg-[#3a2c20] text-[#eedbb5] px-1 rounded font-bold font-sans">START</span>
+            </div>
+
+            {/* Puzzle Landmarks Nodes */}
+            {nodes.slice(1).map((node) => {
+              const isCompleted = completedPuzzles.includes(node.id);
+              const isLocked = node.locked && !isCompleted;
+
+              return (
+                <div
+                  key={node.id}
+                  onClick={() => handleNodeClick(node)}
+                  className="absolute text-center flex flex-col items-center pointer-events-auto cursor-pointer group z-10"
+                  style={{ left: `${node.x}px`, top: `${node.y}px`, transform: 'translate(-50%, -50%)' }}
+                >
+                  {/* Bobbing effect for active landmarks */}
+                  <div className={`w-12 h-12 rounded-full border-2 bg-gradient-to-b flex items-center justify-center text-2xl relative shadow-md transition-all duration-200 active:scale-90 ${
+                    isLocked 
+                      ? 'from-stone-300 to-stone-400 border-stone-500 opacity-60'
+                      : isCompleted
+                        ? 'from-[#fdf6e2] to-[#dfb973] border-yellow-600 hover:border-yellow-500 ring-2 ring-yellow-400/30'
+                        : 'from-[#ffffff] to-[#eddcb9] border-layton-brown hover:border-layton-gold hover:scale-105'
+                  } mini-float`}>
+                    
+                    {/* Landmark Emoji Icon */}
+                    <span>{isLocked ? '🔒' : node.emoji}</span>
+
+                    {/* Solved Stamp Badge */}
+                    {isCompleted && (
+                      <span className="absolute -top-1.5 -right-1.5 bg-red-600 text-[#ffeedd] text-[7px] font-black px-1 py-0.2 rounded border border-red-500 shadow-sm uppercase scale-105 rotate-[8deg] select-none tracking-wider animate-pulse">
+                        ✓
+                      </span>
+                    )}
+                  </div>
+                  
+                  {/* Mini title tag under node */}
+                  <span className="bg-[#4a2e13]/85 text-[#fdf8eb] text-[8px] font-black px-1.5 py-0.5 rounded-full border border-layton-gold/30 mt-1 pointer-events-none font-layton-myeongjo shadow">
+                    {node.id === 'puzzle-001' ? '수수께끼 1' : node.id === 'puzzle-002' ? '수수께끼 2' : node.id === 'puzzle-003' ? '수수께끼 3' : '수수께끼 4'}
+                  </span>
+                </div>
+              );
+            })}
+
+            {/* Walking Detective Character Avatar */}
+            <div 
+              className={`absolute pointer-events-none z-20 ${isWalking ? 'walk-bob' : ''}`}
+              style={{
+                left: `${charPos.x}px`,
+                top: `${charPos.y}px`,
+                transform: 'translate(-50%, -90%)',
+                transition: 'left 1.4s ease-in-out, top 1.4s ease-in-out'
+              }}
+            >
+              <div className="relative flex flex-col items-center">
+                {/* Cute Explorer standing image avatar */}
+                <div className="w-10 h-16 overflow-hidden flex items-center justify-center">
+                  <img 
+                    src={profileGender === 'girl' ? 'girl.png' : 'boy.png'} 
+                    className="h-full object-contain" 
+                    alt="Explorer Token"
+                  />
+                </div>
+                {/* Foot shadow under explorer */}
+                <div className="w-6 h-1.5 bg-black/20 rounded-full blur-[1px] mt-0.5"></div>
+              </div>
+            </div>
+
+            {/* Dialog Level Bubble Card Modal */}
+            {activeBubble && (
+              <div className="absolute bottom-4 left-4 right-4 bg-layton-parchment rounded-2xl border-4 border-layton-brown p-3.5 shadow-2xl flex flex-col items-center text-center solved-banner z-30">
+<span className="text-2xl mb-1">{activeBubble.emoji}</span>
+                <span className="text-[8px] bg-amber-500 text-[#2c1a0c] font-black px-2 py-0.2 rounded-full font-sans uppercase">
+                  PUZZLE {activeBubble.id === 'puzzle-001' ? '001' : activeBubble.id === 'puzzle-002' ? '002' : activeBubble.id === 'puzzle-003' ? '003' : '004'}
+                </span>
+                
+                <h3 className="font-layton-myeongjo font-black text-xs text-layton-dark mt-1.5 mb-1 break-keep">
+                  {activeBubble.name}
+                </h3>
+                <p className="text-[10px] text-layton-lightbrown font-sans font-medium mb-3">
+                  배점: <span className="font-bold text-layton-brown">{activeBubble.picarats} Picarats</span>
+                  {completedPuzzles.includes(activeBubble.id) && <span className="text-red-700 font-extrabold ml-2 font-serif">★ SOLVED ★</span>}
+                </p>
+
+                {activeBubble.locked && !completedPuzzles.includes(activeBubble.id) ? (
+                  <div className="w-full text-center py-2 bg-stone-200 border border-stone-300 text-stone-500 font-black text-xs rounded-xl font-layton-myeongjo">
+                    🔒 아직은 진입할 수 없습니다! (준비중)
+                  </div>
+                ) : (
+                  <div className="flex gap-2 w-full">
+                    <button
+                      onClick={() => setActiveBubble(null)}
+                      className="flex-1 py-2 bg-stone-300 hover:bg-stone-400 text-stone-800 text-xs font-bold rounded-xl border border-stone-400 transition-colors font-layton-myeongjo active:scale-95"
+                    >
+                      지도 닫기
+                    </button>
+                    <button
+                      onClick={() => onSelectPuzzle(activeBubble.id)}
+                      className="flex-1 py-2 bg-gradient-to-b from-[#ebdcb9] to-[#c2af84] hover:from-[#fcf4dc] hover:to-[#dcd0ac] text-layton-dark text-xs font-black rounded-xl border-2 border-[#f2e7cb] shadow active:scale-95 transition-all font-layton-myeongjo"
+                    >
+                      도전하기! 🎯
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+          </div>
+
+        </div>
+      );
+    }
+
+    // MAIN CONTROLLER APP COMPONENT
+    function App() {
+      const [profileName, setProfileName] = useState(() => {
+        return localStorage.getItem('bible_quiz_profile_name') || '';
+      });
+      const [profileGender, setProfileGender] = useState(() => {
+        return localStorage.getItem('bible_quiz_profile_gender') || '';
+      });
+
+      const [screen, setScreen] = useState('opening');
+      const videoRef = useRef(null);
+      const [activePuzzleId, setActivePuzzleId] = useState(null);
+
+      const getNextScreenAfterOpening = () => {
+        const hasName = localStorage.getItem('bible_quiz_profile_name');
+        const hasGender = localStorage.getItem('bible_quiz_profile_gender');
+        return (hasName && hasGender) ? 'menu' : 'create_profile';
+      };
+
+      const handleVideoEnd = () => {
+        const next = getNextScreenAfterOpening();
+        setScreen(next);
+        setIsBgmPlaying(true);
+      };
+      
+      const [completedPuzzles, setCompletedPuzzles] = useState(() => {
+        try {
+          const saved = localStorage.getItem('bible_quiz_completed');
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed)) return parsed;
+          }
+        } catch (e) {
+          console.error(e);
+        }
+        return [];
+      });
+
+      const [coins, setCoins] = useState(() => {
+        try {
+          const saved = localStorage.getItem('bible_quiz_coins');
+          if (saved !== null) {
+            const parsed = parseInt(saved, 10);
+            if (!isNaN(parsed)) return parsed;
+          }
+        } catch (e) {
+          console.error(e);
+        }
+        return 30; // Start with 30 coins
+      });
+
+      const [isSolved, setIsSolved] = useState(false);
+      const [solvedPuzzleId, setSolvedPuzzleId] = useState(null);
+      const [solvedAnimation, setSolvedAnimation] = useState(false);
+
+      const [isBgmPlaying, setIsBgmPlaying] = useState(true);
+      const titleBgmRef = useRef(null);
+      const mapBgmRef = useRef(null);
+      const gameBgmRef = useRef(null);
+      const scmBgmRef = useRef(null);
+
+      // Play appropriate BGM based on screen state and toggle
+      useEffect(() => {
+        if (!titleBgmRef.current || !mapBgmRef.current || !gameBgmRef.current || !scmBgmRef.current) return;
+        
+        if (isBgmPlaying) {
+          if (screen === 'create_profile') {
+            titleBgmRef.current.pause();
+            mapBgmRef.current.pause();
+            gameBgmRef.current.pause();
+            scmBgmRef.current.play().catch(e => console.warn("SCM BGM blocked:", e));
+          } else if (screen === 'menu') {
+            scmBgmRef.current.pause();
+            mapBgmRef.current.pause();
+            gameBgmRef.current.pause();
+            titleBgmRef.current.play().catch(e => console.warn("Title BGM blocked:", e));
+          } else if (screen === 'list') {
+            scmBgmRef.current.pause();
+            titleBgmRef.current.pause();
+            gameBgmRef.current.pause();
+            mapBgmRef.current.play().catch(e => console.warn("Map BGM blocked:", e));
+          } else if (screen === 'game') {
+            scmBgmRef.current.pause();
+            titleBgmRef.current.pause();
+            mapBgmRef.current.pause();
+            gameBgmRef.current.play().catch(e => console.warn("Game BGM blocked:", e));
+          }
+        } else {
+          scmBgmRef.current.pause();
+          titleBgmRef.current.pause();
+          mapBgmRef.current.pause();
+          gameBgmRef.current.pause();
+        }
+      }, [isBgmPlaying, screen]);
+
+      // Bypassing browser autoplay blocking on first page click interaction
+      useEffect(() => {
+        const handleFirstClick = () => {
+          if (!isBgmPlaying) return;
+          if (screen === 'create_profile' && scmBgmRef.current) {
+            scmBgmRef.current.play().catch(e => console.warn("SCM BGM trigger error:", e));
+          } else if (screen === 'menu' && titleBgmRef.current) {
+            titleBgmRef.current.play().catch(e => console.warn("Title BGM trigger error:", e));
+          } else if (screen === 'list' && mapBgmRef.current) {
+            mapBgmRef.current.play().catch(e => console.warn("Map BGM trigger error:", e));
+          } else if (screen === 'game' && gameBgmRef.current) {
+            gameBgmRef.current.play().catch(e => console.warn("Game BGM trigger error:", e));
+          }
+          window.removeEventListener('click', handleFirstClick);
+        };
+        window.addEventListener('click', handleFirstClick);
+        return () => window.removeEventListener('click', handleFirstClick);
+      }, [screen, isBgmPlaying]);
+
+      const puzzlesList = [
+        { id: 'puzzle-001', num: '001', name: '빛과 어둠의 분리', picarats: 30, locked: false },
+        { id: 'puzzle-002', num: '002', name: '오병이어: 나누면 커지는 기적', picarats: 40, locked: false },
+        { id: 'puzzle-003', num: '003', name: '여리고성 무너뜨리기', picarats: 50, locked: true },
+        { id: 'puzzle-004', num: '004', name: '요나와 큰 물고기', picarats: 35, locked: true },
+      ];
+
+      const navigateTo = (targetScreen) => {
+        synth.playClick();
+        setScreen(targetScreen);
+      };
+
+      const handleSpendCoins = (amount) => {
+        const nextCoins = Math.max(0, coins - amount);
+        setCoins(nextCoins);
+        localStorage.setItem('bible_quiz_coins', nextCoins.toString());
+      };
+
+      const handleAddCoins = (amount) => {
+        const nextCoins = coins + amount;
+        setCoins(nextCoins);
+        localStorage.setItem('bible_quiz_coins', nextCoins.toString());
+      };
+
+      const handlePuzzleSolved = (puzzleId) => {
+        synth.playSuccess();
+        setSolvedPuzzleId(puzzleId);
+        setIsSolved(true);
+        setSolvedAnimation(true);
+
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 }
+        });
+
+        if (!completedPuzzles.includes(puzzleId)) {
+          const updated = [...completedPuzzles, puzzleId];
+          setCompletedPuzzles(updated);
+          localStorage.setItem('bible_quiz_completed', JSON.stringify(updated));
+          handleAddCoins(20); // Earn 20 coins on first clear!
+        }
+      };
+
+      const handleResetAllProgress = () => {
+        if (confirm('모든 진행 상황과 클리어 기록을 초기화하시겠습니까?')) {
+          localStorage.removeItem('bible_quiz_completed');
+          localStorage.removeItem('bible_quiz_coins');
+          localStorage.removeItem('bible_quiz_profile_name');
+          localStorage.removeItem('bible_quiz_profile_gender');
+          setCompletedPuzzles([]);
+          setCoins(30);
+          setProfileName('');
+          setProfileGender('');
+          setIsSolved(false);
+          setSolvedPuzzleId(null);
+          setSolvedAnimation(false);
+          synth.playThud();
+          setScreen('opening');
+        }
+      };
+
+      return (
+        <div className="relative w-[360px] h-[640px] bg-[#120d08] rounded-3xl border-8 border-layton-brown shadow-2xl overflow-hidden flex flex-col paper-texture select-none">
+          
+          {/* Background Music Audio elements */}
+          <audio ref={titleBgmRef} src="bgm.mp3" loop />
+          <audio ref={mapBgmRef} src="bgm1.mp3" loop />
+          <audio ref={gameBgmRef} src="1gamebg.mp3" loop />
+          <audio ref={scmBgmRef} src="scm.mp3" loop />
+
+          {/* Gold Framing Decor */}
+          <div className="absolute inset-1.5 border-2 border-layton-gold opacity-80 rounded-2xl pointer-events-none z-30"></div>
+          <div className="absolute inset-0 vignette-effect z-20"></div>
+ 
+          {/* SCREEN -1: OPENING VIDEO SCREEN */}
+          {screen === 'opening' && (
+            <div 
+              className="flex-1 bg-black z-40 fade-in relative flex flex-col justify-center cursor-pointer select-none"
+              onClick={handleVideoEnd}
+            >
+              <video 
+                ref={videoRef}
+                src="opm.mp4" 
+                autoPlay 
+                muted
+                playsInline
+                onEnded={handleVideoEnd}
+                className="w-full h-full object-contain pointer-events-none"
+              />
+              
+              {/* Skip Notice overlay */}
+              <div className="absolute top-4 right-4 bg-black/60 text-white font-layton-myeongjo text-[8px] font-bold py-1 px-2.5 rounded-full border border-white/20 z-50 pointer-events-none">
+                화면을 터치하면 건너뜁니다 ⏩
+              </div>
+            </div>
+          )}
+
+          {/* SCREEN 0: CREATE PROFILE SCREEN */}
+          {screen === 'create_profile' && (
+            <div className="flex-1 flex flex-col justify-between p-6 z-10 fade-in text-center relative bg-[#1e140a]/95 select-none">
+              
+              {/* Decorative vintage frame */}
+              <div className="absolute inset-4 border-2 border-layton-gold/40 rounded-xl pointer-events-none z-0"></div>
+
+              {/* Top right BGM toggle button */}
+              <div className="absolute top-6 right-6 z-30 font-layton-myeongjo">
+                <button
+                  onClick={() => {
+                    synth.playClick();
+                    setIsBgmPlaying(prev => !prev);
+                  }}
+                  className="text-[10px] text-yellow-300 hover:text-yellow-200 font-bold bg-[#36200c]/85 px-2.5 py-1 rounded-full border border-layton-gold/40 shadow-md"
+                >
+                  {isBgmPlaying ? '🎵 음악 켬' : '🔇 음악 끎'}
+                </button>
+              </div>
+
+              {/* Title Section */}
+              <div className="mt-4 z-10">
+                <h1 className="font-layton-myeongjo font-black text-xl text-layton-amber tracking-wider drop-shadow-md">
+                  모험가 등록
+                </h1>
+                <p className="font-layton-myeongjo text-[10px] text-layton-cream/80 mt-1 break-keep">
+                  성경 퍼즐 나라를 탐험할 당신의 정보와 캐릭터를 선택해주세요!
+                </p>
+              </div>
+
+              {/* Name Input Form */}
+              <div className="z-10 px-2 my-2">
+                <label className="block text-[10px] font-bold text-layton-gold/80 font-layton-myeongjo mb-1.5 text-left">
+                  ✍️ 모험가 이름 (최대 8자)
+                </label>
+                <input
+                  type="text"
+                  maxLength={8}
+                  value={profileName}
+                  onChange={(e) => {
+                    setProfileName(e.target.value.trim());
+                    if (!isBgmPlaying) setIsBgmPlaying(true);
+                  }}
+                  placeholder="모험가의 이름을 입력하세요"
+                  className="w-full py-2 px-3 bg-[#fcf8eb] border-2 border-[#8b5a2b] text-layton-dark font-layton-myeongjo font-bold text-center text-xs rounded-xl shadow-inner focus:outline-none focus:border-layton-gold transition-colors"
+                />
+              </div>
+
+              {/* Character Selection Cards */}
+              <div className="z-10 flex gap-4 justify-center my-1">
+                {/* BOY CARD */}
+                <button
+                  onClick={() => {
+                    synth.playClick();
+                    setProfileGender('boy');
+                    if (!isBgmPlaying) setIsBgmPlaying(true);
+                  }}
+                  className={`flex-1 p-2 bg-[#2d1f11]/90 rounded-2xl border-2 flex flex-col items-center justify-between transition-all duration-300 relative group overflow-hidden ${
+                    profileGender === 'boy' 
+                      ? 'border-layton-gold bg-[#4a2f13]/40 shadow-[0_0_15px_rgba(255,215,0,0.4)] scale-105' 
+                      : 'border-layton-gold/20 opacity-60 hover:opacity-90 hover:scale-[1.02]'
+                  }`}
+                >
+                  <div className="h-28 w-full flex items-center justify-center overflow-hidden">
+                    <img 
+                      src="boy.png" 
+                      className="h-full object-contain object-top" 
+                      alt="Boy Explorer"
+                    />
+                  </div>
+                  <span className="font-layton-myeongjo text-[11px] font-black text-layton-cream mt-1">
+                    남자 모험가
+                  </span>
+                  {profileGender === 'boy' && (
+                    <div className="absolute top-1.5 right-1.5 bg-layton-gold text-[#2c1a0c] w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold shadow-md animate-pulse">
+                      ✓
+                    </div>
+                  )}
+                </button>
+
+                {/* GIRL CARD */}
+                <button
+                  onClick={() => {
+                    synth.playClick();
+                    setProfileGender('girl');
+                    if (!isBgmPlaying) setIsBgmPlaying(true);
+                  }}
+                  className={`flex-1 p-2 bg-[#2d1f11]/90 rounded-2xl border-2 flex flex-col items-center justify-between transition-all duration-300 relative group overflow-hidden ${
+                    profileGender === 'girl' 
+                      ? 'border-layton-gold bg-[#4a2f13]/40 shadow-[0_0_15px_rgba(255,215,0,0.4)] scale-105' 
+                      : 'border-layton-gold/20 opacity-60 hover:opacity-90 hover:scale-[1.02]'
+                  }`}
+                >
+                  <div className="h-28 w-full flex items-center justify-center overflow-hidden">
+                    <img 
+                      src="girl.png" 
+                      className="h-full object-contain object-top" 
+                      alt="Girl Explorer"
+                    />
+                  </div>
+                  <span className="font-layton-myeongjo text-[11px] font-black text-layton-cream mt-1">
+                    여자 모험가
+                  </span>
+                  {profileGender === 'girl' && (
+                    <div className="absolute top-1.5 right-1.5 bg-layton-gold text-[#2c1a0c] w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold shadow-md animate-pulse">
+                      ✓
+                    </div>
+                  )}
+                </button>
+              </div>
+
+              {/* Start Adventure Button */}
+              <div className="mb-4 z-10">
+                <button
+                  disabled={!profileName.trim() || !profileGender}
+                  onClick={() => {
+                    synth.playSuccess();
+                    localStorage.setItem('bible_quiz_profile_name', profileName);
+                    localStorage.setItem('bible_quiz_profile_gender', profileGender);
+                    setCoins(30);
+                    localStorage.setItem('bible_quiz_coins', '30');
+                    navigateTo('menu');
+                  }}
+                  className={`w-full py-2.5 bg-gradient-to-b from-[#e7b85e] to-[#ab7418] hover:from-[#f7cb75] hover:to-[#be8420] text-[#2c1a0c] font-black font-layton-myeongjo text-xs rounded-xl border-2 border-[#ffe8b5] shadow-lg transition-all duration-200 ${
+                    (!profileName.trim() || !profileGender) 
+                      ? 'opacity-40 cursor-not-allowed pointer-events-none' 
+                      : 'hover:scale-[1.02] active:scale-95'
+                  }`}
+                >
+                  🧭 모험 임명장 생성 및 출발!
+                </button>
+              </div>
+
+            </div>
+          )}
+
+          {/* SCREEN 1: MAIN MENU TITLE */}
+          {screen === 'menu' && (
+            <div 
+              className="flex-1 flex flex-col justify-end p-6 z-10 fade-in text-center relative bg-cover bg-center bg-no-repeat"
+              style={{ backgroundImage: "url('main_bg.png')" }}
+            >
+              {/* Profile Badge in Top Header */}
+              <div className="absolute top-8 left-4 right-4 bg-[#36200c]/85 border-2 border-layton-gold py-1.5 px-3 rounded-2xl shadow-lg z-20 flex justify-between items-center">
+                <div className="text-left font-layton-myeongjo">
+                  <span className="text-[7px] bg-amber-500 text-stone-900 font-extrabold px-1.5 py-0.2 rounded-full uppercase font-sans">
+                    EXPLORER
+                  </span>
+                  <h3 className="font-layton-myeongjo font-bold text-xs text-layton-cream mt-0.5">
+                    {profileGender === 'girl' ? '👧' : '👦'} {profileName} 모험가
+                  </h3>
+                </div>
+                <div className="text-right text-[9px] text-yellow-300 font-bold font-layton-myeongjo">
+                  🪙 {coins}개 | 해결: {completedPuzzles.length}/{puzzlesList.length}
+                </div>
+              </div>
+
+              {/* Selected Character standee in middle-center (aligned with background gate) */}
+              <div className="absolute top-[245px] left-1/2 -translate-x-1/2 w-32 h-52 pointer-events-none z-10 animate-[walk-bob_4s_infinite_alternate]">
+                <img 
+                  src={profileGender === 'girl' ? 'girl.png' : 'boy.png'} 
+                  className="w-full h-full object-contain"
+                  alt="Explorer Avatar"
+                />
+              </div>
+
+              <div className="flex flex-col gap-2.5 mb-4 z-20 max-w-[240px] w-full mx-auto">
+                <button
+                  onClick={() => navigateTo('list')}
+                  className="w-full py-2.5 bg-gradient-to-b from-[#e7b85e] to-[#ab7418] hover:from-[#f7cb75] hover:to-[#be8420] text-[#2c1a0c] font-black font-layton-myeongjo text-[13px] rounded-xl border-2 border-[#ffe8b5] shadow-[0_4px_10px_rgba(0,0,0,0.6)] hover:scale-[1.02] active:scale-95 transition-all duration-200 text-center"
+                >
+                  📖 성경 탐험 시작하기
+                </button>
+ 
+                <button
+                  onClick={() => navigateTo('list')}
+                  className="w-full py-2.5 bg-gradient-to-b from-[#5c4a3c] to-[#3a2c20] hover:from-[#6d5747] hover:to-[#453426] text-layton-cream font-bold font-layton-myeongjo text-[12px] rounded-xl border border-layton-gold/40 shadow-[0_4px_8px_rgba(0,0,0,0.5)] hover:scale-[1.02] active:scale-95 transition-all duration-200 flex justify-center items-center gap-2"
+                >
+                  🗺️ 성경 지도 보기
+                </button>
+ 
+                <div className="flex justify-between items-center px-1 mt-1 text-white font-layton-myeongjo drop-shadow-[0_2px_4px_rgba(0,0,0,1)]">
+                  <button
+                    onClick={() => setIsBgmPlaying(prev => !prev)}
+                    className="text-[9px] text-yellow-300 hover:text-yellow-200 font-bold"
+                  >
+                    {isBgmPlaying ? '🎵 음악 켬' : '🔇 음악 끎'}
+                  </button>
+                  <span className="text-stone-500 text-[9px]">|</span>
+                  <button
+                    onClick={handleResetAllProgress}
+                    className="text-[9px] text-red-300 hover:text-red-200 font-bold hover:underline"
+                  >
+                    초기화 🔄
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+          
+           {/* SCREEN 2: PUZZLE EXPLORE MAP */}
+          {screen === 'list' && (
+            <PuzzleMap 
+              puzzlesList={puzzlesList}
+              completedPuzzles={completedPuzzles}
+              coins={coins}
+              activePuzzleId={activePuzzleId}
+              isBgmPlaying={isBgmPlaying}
+              onToggleBgm={() => setIsBgmPlaying(prev => !prev)}
+              profileGender={profileGender}
+              onSelectPuzzle={(puzzleId) => {
+                setActivePuzzleId(puzzleId);
+                navigateTo('game');
+              }}
+              onBack={() => navigateTo('menu')}
+            />
+          )}
+
+          {/* SCREEN 3: ACTIVE PUZZLE SCREEN */}
+          {screen === 'game' && (
+            <div className="flex-1 flex flex-col fade-in z-10 pt-[6px] px-[6px] pb-[6px]">
+              
+              {/* Shared Puzzle Header */}
+              <div className="relative bg-[#36200c] border-b border-layton-gold py-1.5 px-2 flex justify-between items-center z-10 select-none">
+                <button
+                  onClick={() => navigateTo('list')}
+                  className="text-[9px] text-layton-amber font-layton-myeongjo font-bold hover:text-yellow-400 transition-colors whitespace-nowrap"
+                >
+                  ◀ 도감목록
+                </button>
+                <div className="text-center mx-1 flex-1 min-w-0">
+                  <h2 className="text-layton-cream font-layton-myeongjo font-bold text-[9px] tracking-tight truncate">
+                    {activePuzzleId === 'puzzle-001' ? '1스테이지: 빛과 어둠의 분리' : '오병이어: 나누면 커지는 기적'}
+                  </h2>
+                </div>
+                <div className="flex items-center gap-1.5 flex-none">
+                  <button
+                    onClick={() => setIsBgmPlaying(prev => !prev)}
+                    className="text-[9px] hover:scale-110 active:scale-90 transition-transform"
+                    title="배경음악 켜기/끄기"
+                  >
+                    {isBgmPlaying ? '🎵' : '🔇'}
+                  </button>
+                  <span className="text-stone-600 text-[8px]">|</span>
+                  <div className="flex items-center gap-0.5 text-yellow-400 text-[9px] font-bold">
+                    <span>🪙</span>
+                    <span>{coins}</span>
+                  </div>
+                  <span className="text-stone-600 text-[8px]">|</span>
+                  <div className="flex items-center gap-0.5">
+                    <span className="text-layton-amber text-[9px] font-bold">
+                      {activePuzzleId === 'puzzle-001' ? '30' : '40'}
+                    </span>
+                    <span className="text-layton-gold text-[8px] font-extrabold font-serif italic tracking-wide">P</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Conditional stage rendering */}
+              {activePuzzleId === 'puzzle-001' ? (
+                <PuzzleNoah 
+                  coins={coins}
+                  onSpendCoins={handleSpendCoins}
+                  onBack={() => navigateTo('list')} 
+                  onSolved={handlePuzzleSolved} 
+                />
+              ) : (
+                <PuzzleFiveLoaves 
+                  coins={coins}
+                  onSpendCoins={handleSpendCoins}
+                  onBack={() => navigateTo('list')} 
+                  onSolved={handlePuzzleSolved} 
+                />
+              )}
+            </div>
+          )}
+
+          {/* SHARED THEOLOGICAL SUCCESS MODAL OVERLAY */}
+          {isSolved && (
+            <div className="absolute inset-0 bg-[#0e0a06]/90 z-50 flex flex-col justify-between p-4 overflow-y-auto parchment-scroll">
+              
+              {/* SOLVED BANNER */}
+              {solvedAnimation && (
+                <div className="flex-none text-center my-4 solved-banner">
+                  <div className="inline-block relative">
+                    <div className="bg-red-700 text-[#fff5db] border-4 border-layton-gold font-extrabold text-lg px-8 py-2.5 rounded-full shadow-2xl uppercase tracking-widest relative z-10 font-layton-myeongjo animate-[bounce_1s_infinite_alternate]">
+                      🎉 수수께끼 해결!
+                    </div>
+                    <div className="absolute -inset-0.5 bg-black rounded-full blur-sm opacity-50"></div>
+                  </div>
+                </div>
+              )}
+
+              {/* CARD MESSAGE OVERLAY */}
+              <div className="flex-1 bg-layton-parchment border-4 border-layton-amber rounded-2xl p-4 shadow-2xl flex flex-col justify-between my-2 overflow-y-auto parchment-scroll">
+                <div>
+                  {solvedPuzzleId === 'puzzle-001' ? (
+                    // Separation of Light and Darkness reflection
+                    <div>
+                      <div className="text-center border-b border-layton-brown/30 pb-2 mb-3 font-layton-myeongjo">
+                        <span className="text-[10px] text-layton-lightbrown font-bold tracking-wider uppercase">Theological Puzzle Reflection</span>
+                        <h4 className="font-layton-myeongjo font-black text-sm text-layton-brown mt-0.5">창조의 은혜 : 가짜를 끄고 참된 빛을 봄</h4>
+                      </div>
+                      
+                      <div className="w-full flex justify-center py-2 mb-2 bg-[#120f18] border border-layton-brown/10 rounded-lg">
+                        <svg width="90" height="60" viewBox="0 0 120 90" xmlns="http://www.w3.org/2000/svg">
+                          <rect width="120" height="90" fill="#0c0a0f" rx="8" />
+                          <circle cx="20" cy="20" r="1.5" fill="#ffd700" opacity="0.6"/>
+                          <circle cx="100" cy="30" r="1" fill="#fff" opacity="0.8"/>
+                          <circle cx="85" cy="70" r="1.5" fill="#fff" opacity="0.5"/>
+                          <circle cx="35" cy="65" r="1" fill="#ffd700" opacity="0.7"/>
+                          
+                          <circle cx="60" cy="45" r="30" fill="url(#sunGlow)" opacity="0.15"/>
+                          <circle cx="60" cy="45" r="15" fill="url(#sunGlow)" opacity="0.4"/>
+                          
+                          <circle cx="60" cy="45" r="8" fill="#ffffff" />
+                          <circle cx="60" cy="45" r="8" fill="#ffd700" opacity="0.5" />
+                          
+                          <line x1="60" y1="28" x2="60" y2="20" stroke="#ffd700" strokeWidth="1.5" strokeLinecap="round" />
+                          <line x1="60" y1="62" x2="60" y2="70" stroke="#ffd700" strokeWidth="1.5" strokeLinecap="round" />
+                          <line x1="43" y1="45" x2="35" y2="45" stroke="#ffd700" strokeWidth="1.5" strokeLinecap="round" />
+                          <line x1="77" y1="45" x2="85" y2="45" stroke="#ffd700" strokeWidth="1.5" strokeLinecap="round" />
+                          <line x1="48" y1="33" x2="42" y2="27" stroke="#ffd700" strokeWidth="1.2" strokeLinecap="round" />
+                          <line x1="72" y1="57" x2="78" y2="63" stroke="#ffd700" strokeWidth="1.2" strokeLinecap="round" />
+                          <line x1="72" y1="33" x2="78" y2="27" stroke="#ffd700" strokeWidth="1.2" strokeLinecap="round" />
+                          <line x1="48" y1="57" x2="42" y2="63" stroke="#ffd700" strokeWidth="1.2" strokeLinecap="round" />
+
+                          <defs>
+                            <radialGradient id="sunGlow" cx="50%" cy="50%" r="50%">
+                              <stop offset="0%" stopColor="#ffffff"/>
+                              <stop offset="50%" stopColor="#ffd700"/>
+                              <stop offset="100%" stopColor="#0c0a0f" stopOpacity="0"/>
+                            </radialGradient>
+                          </defs>
+                        </svg>
+                      </div>
+
+                      <p className="font-layton-myeongjo text-[11px] leading-relaxed text-layton-dark font-medium text-justify break-keep mb-3">
+                        우리는 이 세상의 수많은 반짝임들(🧸 장난감, 💵 재물, 📱 스마트폰 등)을 가치 있는 '빛'으로 착각하고 쫓아갑니다. 그러나 이들은 참된 생명을 주지 못하는 '가짜 유혹의 빛'일 뿐입니다.
+                      </p>
+
+                      <blockquote className="border-l-2 border-red-700 pl-2 py-0.5 bg-red-50/50 mb-3">
+                        <p className="font-layton-myeongjo text-[11px] font-bold text-red-800 italic leading-relaxed break-keep">
+                          "참된 은혜는 세상의 화려한 소음과 가짜 빛들을 꺼버리고 온전히 비워진 내 마음에 하나님의 진정한 창조의 빛이 찾아올 때 시작됩니다."
+                        </p>
+                      </blockquote>
+
+                      <p className="font-layton-myeongjo text-[11px] leading-relaxed text-layton-dark font-medium text-justify break-keep">
+                        가짜 빛들을 모두 터치하여 끈 뒤 비로소 만나게 된 참된 흑암 상태에서, 하나님께서는 비로소 진짜 생명의 빛을 선포하십니다. "빛이 있으라 하매 빛이 있었고..." 이 분리함을 통해 우리는 영적인 참 빛의 소중함을 깨닫습니다.
+                      </p>
+                    </div>
+                  ) : (
+                    // Five Loaves and Two Fish reflection
+                    <div>
+                      <div className="text-center border-b border-layton-brown/30 pb-2 mb-3 font-layton-myeongjo">
+                        <span className="text-[10px] text-layton-lightbrown font-bold tracking-wider uppercase">Theological Puzzle Reflection</span>
+                        <h4 className="font-layton-myeongjo font-black text-sm text-layton-brown mt-0.5">나눔의 비결 : 쪼개어지는 축복</h4>
+                      </div>
+                      
+                      <div className="w-full flex justify-center py-2 mb-2 bg-[#f0ebd7] border border-layton-brown/10 rounded-lg">
+                        <svg width="90" height="60" viewBox="0 0 120 90" xmlns="http://www.w3.org/2000/svg">
+                          <ellipse cx="60" cy="55" rx="35" ry="18" fill="#d4a373" stroke="#8b5a2b" strokeWidth="2.5"/>
+                          <circle cx="50" cy="46" r="8" fill="#ffd700" opacity="0.9"/>
+                          <circle cx="70" cy="48" r="7" fill="#ffd700" opacity="0.9"/>
+                          <circle cx="60" cy="43" r="9" fill="#f5ead6" stroke="#814109" strokeWidth="1.5"/>
+                          <path d="M 60,20 L 60,50 M 50,30 L 70,30" stroke="#e6a817" strokeWidth="3" strokeLinecap="round" opacity="0.85"/>
+                          <ellipse cx="60" cy="55" rx="35" ry="8" fill="#e5ba90" stroke="#8b5a2b" strokeWidth="1" opacity="0.3"/>
+                        </svg>
+                      </div>
+
+                      <p className="font-layton-myeongjo text-[11px] leading-relaxed text-layton-dark font-medium text-justify break-keep mb-3">
+                        세상의 지혜는 움켜쥐고(더하기) 곱해서 자산을 불릴 때 부요함이 찾아온다고 말합니다. 
+                        하지만 하늘나라의 기적은 오직 우리가 가진 가장 크고 소중한 것(Lv5)을 주님의 손에 올리고, 기꺼이 쪼개고 나눌 때 일어납니다.
+                      </p>
+
+                      <blockquote className="border-l-2 border-red-700 pl-2 py-0.5 bg-red-50/50 mb-3">
+                        <p className="font-layton-myeongjo text-[11px] font-bold text-red-800 italic leading-relaxed break-keep font-layton-myeongjo">
+                          "보리떡과 물고기가 더 작게 나누어지고 쪼개어질 때, 오히려 5천 명을 먹이고도 12바구니가 가득 차 흐릅니다."
+                        </p>
+                      </blockquote>
+
+                      <p className="font-layton-myeongjo text-[11px] leading-relaxed text-layton-dark font-medium text-justify break-keep">
+                        나를 쪼개어 타인을 채우는 '나눔의 신비'. 내가 작아지고 소외될 때 주님의 손을 통해 
+                        오히려 만물이 풍성해지는 오병이어의 반전 법칙이야말로 하나님께서 세상을 돌보시는 사랑의 원리입니다.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-4 flex flex-col gap-2">
+                  <div className="bg-yellow-100 border border-yellow-300 text-yellow-800 text-[10px] text-center font-bold font-sans py-1 rounded font-layton-myeongjo">
+                    ★ PICARATS +{solvedPuzzleId === 'puzzle-001' ? '30' : '40'} ACQUIRED ★
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setIsSolved(false);
+                      setSolvedPuzzleId(null);
+                      setSolvedAnimation(false);
+                      navigateTo('list');
+                    }}
+                    className="w-full py-2 bg-gradient-to-b from-layton-amber to-amber-600 hover:from-yellow-400 hover:to-amber-500 text-layton-dark font-bold font-layton-myeongjo text-xs rounded-xl border border-layton-gold shadow-md active:scale-95 transition-all text-center font-layton-myeongjo"
+                  >
+                    도감 목록으로 돌아가기 🗂️
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          )}
+
+        </div>
+      );
+    }
+
+    const container = document.getElementById('root');
+    const root = ReactDOM.createRoot(container);
+    root.render(<App />);
+  </script>
+</body>
+</html>

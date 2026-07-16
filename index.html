@@ -1262,13 +1262,14 @@
 
     // EXPLORE MAP COMPONENT (Mario-style)
     function PuzzleMap({ puzzlesList, completedPuzzles, coins, activePuzzleId, isBgmPlaying, onToggleBgm, profileGender, onSelectPuzzle, onBack }) {
-      const startNode = { id: 'start', x: 45, y: 440 };
       const nodes = [
-        startNode,
-        { id: 'puzzle-001', x: 90, y: 395, emoji: '💡', name: '1스테이지: 빛과 어둠의 분리', picarats: 30 },
-        { id: 'puzzle-002', x: 235, y: 310, emoji: '🧺', name: '오병이어: 나누면 커지는 기적', picarats: 40 },
-        { id: 'puzzle-003', x: 100, y: 210, emoji: '🧱', name: '여리고성 무너뜨리기', picarats: 50, locked: true },
-        { id: 'puzzle-004', x: 230, y: 110, emoji: '🐳', name: '요나와 큰 물고기', picarats: 35, locked: true },
+        { id: 'puzzle-001', x: 20, y: 18, emoji: '💡', name: '스테이지 1: 빛과 어둠의 분리', picarats: 30 },
+        { id: 'puzzle-002', x: 70, y: 32, emoji: '🦁', name: '스테이지 2: 에덴동산의 동물들', picarats: 35 },
+        { id: 'puzzle-003', x: 20, y: 46, emoji: '🍎', name: '스테이지 3: 선악과와 인간의 타락', picarats: 40 },
+        { id: 'puzzle-004', x: 82, y: 48, emoji: '🚢', name: '스테이지 4: 노아의 방주와 홍수', picarats: 45 },
+        { id: 'puzzle-005', x: 43, y: 62, emoji: '🧱', name: '스테이지 5: 바벨탑과 흩어진 인류', picarats: 50 },
+        { id: 'puzzle-006', x: 21, y: 74, emoji: '⛺', name: '스테이지 6: 아브라함과 믿음의 제단', picarats: 55 },
+        { id: 'puzzle-007', x: 79, y: 82, emoji: '🐏', name: '스테이지 7: 이삭과 야곱', picarats: 60 },
       ];
 
       // Find initial character position based on activePuzzleId or completed progress
@@ -1360,32 +1361,26 @@
           </div>
 
           {/* Map Content Canvas Area */}
-          <div className="flex-1 relative bg-[#eedbb5] overflow-hidden shadow-inner">
+          <div className="flex-1 relative bg-stone-900 overflow-hidden shadow-inner">
             
-            {/* Scenic Gradients representing sand sky overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#dfb983]/30 via-transparent to-[#bae6fd]/25 pointer-events-none z-0"></div>
-
-                     {/* Start Flag Sign */}
+            {/* Map Background Illustration */}
             <div 
-              className="absolute text-center flex flex-col items-center pointer-events-auto cursor-pointer"
-              style={{ left: `${startNode.x}px`, top: `${startNode.y}px`, transform: 'translate(-50%, -50%)' }}
-              onClick={() => handleNodeClick(startNode)}
-            >
-              <span className="text-xl drop-shadow-md">🏁</span>
-              <span className="text-[7px] bg-[#3a2c20] text-[#eedbb5] px-1 rounded font-bold font-sans">START</span>
-            </div>
+              className="absolute inset-0 bg-cover bg-center bg-no-repeat z-0" 
+              style={{ backgroundImage: "url('map_bg.jpg')", backgroundSize: '100% 100%' }}
+            />
 
             {/* Puzzle Landmarks Nodes */}
-            {nodes.slice(1).map((node) => {
+            {nodes.map((node, index) => {
               const isCompleted = completedPuzzles.includes(node.id);
-              const isLocked = node.locked && !isCompleted;
+              // Progressive unlocking system: first stage is unlocked, or unlocked if previous stage is completed
+              const isLocked = index > 0 && !completedPuzzles.includes(nodes[index - 1].id);
 
               return (
                 <div
                   key={node.id}
                   onClick={() => handleNodeClick(node)}
                   className="absolute text-center flex flex-col items-center pointer-events-auto cursor-pointer group z-10"
-                  style={{ left: `${node.x}px`, top: `${node.y}px`, transform: 'translate(-50%, -50%)' }}
+                  style={{ left: `${node.x}%`, top: `${node.y}%`, transform: 'translate(-50%, -50%)' }}
                 >
                   {/* Bobbing effect for active landmarks */}
                   <div className={`w-12 h-12 rounded-full border-2 bg-gradient-to-b flex items-center justify-center text-2xl relative shadow-md transition-all duration-200 active:scale-90 ${
@@ -1409,7 +1404,7 @@
                   
                   {/* Mini title tag under node */}
                   <span className="bg-[#4a2e13]/85 text-[#fdf8eb] text-[8px] font-black px-1.5 py-0.5 rounded-full border border-layton-gold/30 mt-1 pointer-events-none font-layton-myeongjo shadow">
-                    {node.id === 'puzzle-001' ? '수수께끼 1' : node.id === 'puzzle-002' ? '수수께끼 2' : node.id === 'puzzle-003' ? '수수께끼 3' : '수수께끼 4'}
+                    {`스테이지 ${index + 1}`}
                   </span>
                 </div>
               );
@@ -1419,8 +1414,8 @@
             <div 
               className={`absolute pointer-events-none z-20 ${isWalking ? 'walk-bob' : ''}`}
               style={{
-                left: `${charPos.x}px`,
-                top: `${charPos.y}px`,
+                left: `${charPos.x}%`,
+                top: `${charPos.y}%`,
                 transform: 'translate(-50%, -90%)',
                 transition: 'left 1.4s ease-in-out, top 1.4s ease-in-out'
               }}
@@ -1444,7 +1439,7 @@
               <div className="absolute bottom-4 left-4 right-4 bg-layton-parchment rounded-2xl border-4 border-layton-brown p-3.5 shadow-2xl flex flex-col items-center text-center solved-banner z-30">
 <span className="text-2xl mb-1">{activeBubble.emoji}</span>
                 <span className="text-[8px] bg-amber-500 text-[#2c1a0c] font-black px-2 py-0.2 rounded-full font-sans uppercase">
-                  PUZZLE {activeBubble.id === 'puzzle-001' ? '001' : activeBubble.id === 'puzzle-002' ? '002' : activeBubble.id === 'puzzle-003' ? '003' : '004'}
+                  PUZZLE {activeBubble.id.replace('puzzle-', '')}
                 </span>
                 
                 <h3 className="font-layton-myeongjo font-black text-xs text-layton-dark mt-1.5 mb-1 break-keep">
@@ -1494,6 +1489,7 @@
       });
 
       const [screen, setScreen] = useState('opening');
+      const [isVideoMuted, setIsVideoMuted] = useState(true);
       const videoRef = useRef(null);
       const [activePuzzleId, setActivePuzzleId] = useState(null);
 
@@ -1599,10 +1595,13 @@
       }, [screen, isBgmPlaying]);
 
       const puzzlesList = [
-        { id: 'puzzle-001', num: '001', name: '빛과 어둠의 분리', picarats: 30, locked: false },
-        { id: 'puzzle-002', num: '002', name: '오병이어: 나누면 커지는 기적', picarats: 40, locked: false },
-        { id: 'puzzle-003', num: '003', name: '여리고성 무너뜨리기', picarats: 50, locked: true },
-        { id: 'puzzle-004', num: '004', name: '요나와 큰 물고기', picarats: 35, locked: true },
+        { id: 'puzzle-001', num: '001', name: '스테이지 1: 빛과 어둠의 분리', picarats: 30, locked: false },
+        { id: 'puzzle-002', num: '002', name: '스테이지 2: 에덴동산의 동물들', picarats: 35, locked: false },
+        { id: 'puzzle-003', num: '003', name: '스테이지 3: 선악과와 인간의 타락', picarats: 40, locked: true },
+        { id: 'puzzle-004', num: '004', name: '스테이지 4: 노아의 방주와 홍수', picarats: 45, locked: true },
+        { id: 'puzzle-005', num: '005', name: '스테이지 5: 바벨탑과 흩어진 인류', picarats: 50, locked: true },
+        { id: 'puzzle-006', num: '006', name: '스테이지 6: 아브라함과 믿음의 제단', picarats: 55, locked: true },
+        { id: 'puzzle-007', num: '007', name: '스테이지 7: 이삭과 야곱', picarats: 60, locked: true },
       ];
 
       const navigateTo = (targetScreen) => {
@@ -1676,23 +1675,44 @@
           {/* SCREEN -1: OPENING VIDEO SCREEN */}
           {screen === 'opening' && (
             <div 
-              className="flex-1 bg-black z-40 fade-in relative flex flex-col justify-center cursor-pointer select-none"
-              onClick={handleVideoEnd}
+              className="flex-1 bg-black z-40 fade-in relative flex flex-col justify-center select-none"
             >
               <video 
                 ref={videoRef}
                 src="opm.mp4" 
                 autoPlay 
-                muted
+                muted={isVideoMuted}
                 playsInline
                 onEnded={handleVideoEnd}
-                className="w-full h-full object-contain pointer-events-none"
+                onClick={handleVideoEnd}
+                className="w-full h-full object-contain cursor-pointer"
               />
               
               {/* Skip Notice overlay */}
-              <div className="absolute top-4 right-4 bg-black/60 text-white font-layton-myeongjo text-[8px] font-bold py-1 px-2.5 rounded-full border border-white/20 z-50 pointer-events-none">
-                화면을 터치하면 건너뜁니다 ⏩
+              <div 
+                onClick={handleVideoEnd}
+                className="absolute top-4 right-4 bg-black/60 text-white font-layton-myeongjo text-[8px] font-bold py-1 px-2.5 rounded-full border border-white/20 z-50 cursor-pointer hover:bg-black/80"
+              >
+                건너뛰기 ⏩
               </div>
+
+              {/* Unmute button */}
+              {isVideoMuted && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsVideoMuted(false);
+                    synth.init();
+                    if (videoRef.current) {
+                      videoRef.current.muted = false;
+                      videoRef.current.play().catch(e => console.warn(e));
+                    }
+                  }}
+                  className="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-[#e7b85e] border-2 border-[#ffe8b5] text-[#2c1a0c] font-black font-layton-myeongjo text-[9px] px-4 py-2 rounded-full z-50 flex items-center gap-1 shadow-lg animate-pulse hover:scale-105 active:scale-95 transition-all"
+                >
+                  🔊 인트로 소리 켜기
+                </button>
+              )}
             </div>
           )}
 
@@ -1854,7 +1874,7 @@
               </div>
 
               {/* Selected Character standee in middle-center (aligned with background gate) */}
-              <div className="absolute top-[245px] left-1/2 -translate-x-1/2 w-32 h-52 pointer-events-none z-10 animate-[walk-bob_4s_infinite_alternate]">
+              <div className="absolute bottom-[185px] left-1/2 -translate-x-1/2 w-32 h-52 pointer-events-none z-10 animate-[walk-bob_4s_infinite_alternate]">
                 <img 
                   src={profileGender === 'girl' ? 'girl.png' : 'boy.png'} 
                   className="w-full h-full object-contain"

@@ -257,7 +257,7 @@
 
   <!-- React Logic & UI Components -->
   <script type="text/babel">
-    const { useState, useEffect, useRef } = React;
+    const { useState, useEffect, useRef, useCallback } = React;
 
     // Simple Synth for Layton Sound Effects using Web Audio API
     class AudioSynth {
@@ -460,6 +460,22 @@
         }
         this.vicAudio.currentTime = 0;
         this.vicAudio.play().catch(e => console.warn("Vic audio play error:", e));
+      }
+
+      playO() {
+        if (!this.oAudio) {
+          this.oAudio = new Audio('o.mp3');
+        }
+        this.oAudio.currentTime = 0;
+        this.oAudio.play().catch(e => console.warn("O audio play error:", e));
+      }
+
+      playN() {
+        if (!this.nAudio) {
+          this.nAudio = new Audio('n.mp3');
+        }
+        this.nAudio.currentTime = 0;
+        this.nAudio.play().catch(e => console.warn("N audio play error:", e));
       }
     }
 
@@ -727,47 +743,49 @@
             {/* PHASE 2: FLOATING LIGHT ICONS GAMEPLAY */}
             {gameStarted && !isCompleted && !isFailed && (
               <div className="absolute inset-0 w-full h-full relative">
-                {/* Hint Floating Button */}
-                <button
-                  onClick={() => {
-                    synth.playClick();
-                    if (hintUnlocked) {
-                      setShowHint(true);
-                    } else {
-                      setShowUnlockConfirm(true);
-                    }
-                  }}
-                  className="absolute top-4 left-4 bg-black/60 border border-stone-800 text-[#e7b85e] hover:text-yellow-300 text-[8px] font-layton-myeongjo font-bold px-3 py-1 rounded-full z-20 flex items-center gap-0.5"
-                >
-                  💡 힌트
-                </button>
+                {/* Top Left HUD - Hint & Slow buttons */}
+                <div className="absolute top-4 left-4 z-20 flex items-center gap-2">
+                  {/* Hint Floating Button */}
+                  <button
+                    onClick={() => {
+                      synth.playClick();
+                      if (hintUnlocked) {
+                        setShowHint(true);
+                      } else {
+                        setShowUnlockConfirm(true);
+                      }
+                    }}
+                    className="bg-black/60 border border-stone-800 text-[#e7b85e] hover:text-yellow-300 text-[11px] font-layton-myeongjo font-bold px-3.5 py-1.5 rounded-full flex items-center gap-0.5"
+                  >
+                    💡 힌트
+                  </button>
 
-                {/* Slow Motion Item Button */}
-                <button
-                  onClick={handleSlowItemClick}
-                  disabled={isSlowed || coins < 10}
-                  className={`absolute top-4 bg-black/60 border ${
-                    isSlowed ? 'border-sky-500 text-sky-400 animate-pulse' : 'border-stone-800 text-sky-300 hover:text-sky-200'
-                  } text-[8px] font-layton-myeongjo font-bold px-2.5 py-1 rounded-full z-20 flex items-center gap-0.5 transition-all ${
-                    (isSlowed || coins < 10) ? 'opacity-40 cursor-not-allowed' : 'active:scale-95'
-                  }`}
-                  style={{ left: '72px' }}
-                >
-                  🌀 {isSlowed ? '슬로우 중 (3초)' : '슬로우 (10🪙)'}
-                </button>
+                  {/* Slow Motion Item Button */}
+                  <button
+                    onClick={handleSlowItemClick}
+                    disabled={isSlowed || coins < 10}
+                    className={`bg-black/60 border ${
+                      isSlowed ? 'border-sky-500 text-sky-400 animate-pulse' : 'border-stone-800 text-sky-300 hover:text-sky-200'
+                    } text-[11px] font-layton-myeongjo font-bold px-3 py-1.5 rounded-full flex items-center gap-0.5 transition-all ${
+                      (isSlowed || coins < 10) ? 'opacity-40 cursor-not-allowed' : 'active:scale-95'
+                    }`}
+                  >
+                    🌀 {isSlowed ? '슬로우 중 (3초)' : '슬로우 (10🪙)'}
+                  </button>
+                </div>
 
                 {/* Dark Chaos Background Hint overlay */}
                 <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 pointer-events-none z-10">
-                  <span className="bg-black/60 border border-stone-800 text-stone-400 text-[8px] font-layton-myeongjo font-bold px-3 py-1 rounded-full whitespace-nowrap">
-                    남은 가짜 빛: <span className="text-yellow-400 font-extrabold">{lights.length}</span>개
+                  <span className="bg-black/60 border border-stone-800 text-stone-300 text-[12px] font-layton-myeongjo font-bold px-4 py-2 rounded-full whitespace-nowrap">
+                    남은 가짜 빛: <span className="text-yellow-400 font-extrabold text-sm ml-0.5 mr-0.5">{lights.length}</span>개
                   </span>
                 </div>
 
                 {/* Timer Display overlay in top right */}
-                <div className={`absolute top-4 right-4 z-20 ${timeLeft <= 3 ? 'text-red-500 font-extrabold scale-110' : 'text-stone-300'} text-[8px] font-layton-myeongjo flex items-center gap-1 transition-all duration-200`}>
-                  <span className={`${timeLeft <= 3 ? 'animate-bounce' : ''}`}>⏱️</span>
-                  <span className="bg-black/60 border border-stone-800 px-2 py-0.5 rounded-full">
-                    <span className="text-xs font-black mr-0.5">{timeLeft}</span>초
+                <div className={`absolute top-4 right-4 z-20 ${timeLeft <= 3 ? 'text-red-500 font-extrabold scale-110' : 'text-stone-300'} text-[12px] font-layton-myeongjo flex items-center gap-1.5 transition-all duration-200`}>
+                  <span className={`text-sm ${timeLeft <= 3 ? 'animate-bounce' : ''}`}>⏱️</span>
+                  <span className="bg-black/60 border border-stone-800 px-3 py-1 rounded-full flex items-center">
+                    <span className="text-base font-black mr-0.5 text-yellow-400">{timeLeft}</span>초
                   </span>
                 </div>
 
@@ -876,11 +894,21 @@
                     </div>
                   </div>
 
+                  <div className="mt-3 mb-3 bg-gradient-to-r from-sky-900/50 to-sky-800/30 border border-sky-500/40 rounded-xl p-2.5 text-center">
+                    <div className="text-[10px] text-sky-300 font-bold font-layton-myeongjo">🏆 획득 점수</div>
+                    <div className="flex items-baseline justify-center gap-2 mt-0.5">
+                      <span className="text-yellow-200 font-black text-sm font-layton-myeongjo">+30P</span>
+                      <span className="text-sky-300 font-black text-sm font-layton-myeongjo">+{Math.min(20, Math.round(timeLeft * 1.3))}P 속도보너스!</span>
+                    </div>
+                    <div className="text-[9px] text-white/40 font-layton-myeongjo mt-0.5">남은 시간 {timeLeft}초 × 1.3 = 속도 보너스</div>
+                  </div>
+
                   <div className="mt-4">
                     <button
                       onClick={() => {
                         synth.playSuccess();
-                        onSolved('puzzle-001');
+                        const speedBonus = Math.min(20, Math.round(timeLeft * 1.3));
+                        onSolved('puzzle-001', speedBonus);
                       }}
                       className="w-full py-2 bg-gradient-to-b from-[#e7b85e] to-[#ab7418] hover:from-[#f7cb75] hover:to-[#be8420] text-[#2c1a0c] font-black font-layton-myeongjo text-xs rounded-xl border-2 border-[#ffe8b5] shadow-md transition-all duration-200 hover:scale-[1.02] active:scale-95"
                     >
@@ -950,6 +978,1222 @@
             </div>
           )}
 
+        </div>
+      );
+    }
+
+
+    // ─────────────────────────────────────────────
+    // STAGE 3: 아담의 바구니 (Catching Game)
+    // ─────────────────────────────────────────────
+    function PuzzleAdamBasket({ coins, onSpendCoins, onBack, onSolved }) {
+      // 대폭 완화된 속도 및 조정된 스폰 간격
+      const STAGE_CONFIGS = [
+        { level: 1, timeLimit: 30, targetScore: 8,  spawnInterval: 1300, fallSpeed: 0.60 },
+        { level: 2, timeLimit: 35, targetScore: 12, spawnInterval: 1100, fallSpeed: 0.80 },
+        { level: 3, timeLimit: 40, targetScore: 18, spawnInterval: 900,  fallSpeed: 1.00 },
+        { level: 4, timeLimit: 45, targetScore: 24, spawnInterval: 700,  fallSpeed: 1.25 },
+        { level: 5, timeLimit: 50, targetScore: 30, spawnInterval: 550,  fallSpeed: 1.55 },
+      ];
+
+      // 3game.png 스프라이트 좌표 매핑 (x1, y1, x2, y2)
+      const GRACE_ITEMS  = [
+        { emoji: '❤️',  label: '사랑', type: 'grace', bbox: [110, 466, 282, 625] },    // Item 0 (하트)
+        { emoji: '📖',  label: '성경', type: 'grace', bbox: [443, 461, 631, 633] },   // Item 1 (성경책)
+        { emoji: '🙏',  label: '기도', type: 'grace', bbox: [754, 447, 942, 653] },   // Item 2 (기도 손)
+      ];
+      const TEMPT_ITEMS  = [
+        { emoji: '🍎',  label: '선악과', type: 'tempt', bbox: [95, 866, 273, 1045] },  // Item 3 (선악과)
+        { emoji: '🐍',  label: '뱀',    type: 'tempt', bbox: [778, 861, 962, 1045] },   // Item 5 (뱀)
+        { emoji: '🎮',  label: '게임기', type: 'tempt', bbox: [737, 1293, 968, 1433] }, // Item 7 (게임기)
+      ];
+
+      const [currentLevel, setCurrentLevel] = useState(1);
+      const [score, setScore]               = useState(0);
+      const [hearts, setHearts]             = useState(3); // 목숨 최대 3개
+      const [timeLeft, setTimeLeft]         = useState(STAGE_CONFIGS[0].timeLimit);
+      const [items, setItems]               = useState([]);
+      const [adamX, setAdamX]               = useState(50); // percent
+      const [phase, setPhase]               = useState('playing'); // playing | levelClear | gameOver | allClear
+      const [redFlash, setRedFlash]         = useState(false);
+      const [catchText, setCatchText]       = useState('');
+      const [finalBonusScore, setFinalBonusScore] = useState(0);
+
+      const gameAreaRef  = useRef(null);
+      const animFrameRef = useRef(null);
+      const lastSpawnRef = useRef(0);
+      const itemsRef     = useRef([]);
+      const scoreRef     = useRef(0);
+      const heartsRef    = useRef(3); // 목숨 최대 3개
+      const phaseRef     = useRef('playing');
+      const configRef    = useRef(STAGE_CONFIGS[0]);
+      const nextIdRef    = useRef(0);
+
+      // Sync refs
+      useEffect(() => { itemsRef.current = items; }, [items]);
+      useEffect(() => { scoreRef.current = score; }, [score]);
+      useEffect(() => { heartsRef.current = hearts; }, [hearts]);
+      useEffect(() => { phaseRef.current = phase; }, [phase]);
+
+      // Touch/mouse Adam movement
+      const handlePointerMove = useCallback((clientX) => {
+        if (!gameAreaRef.current) return;
+        const rect = gameAreaRef.current.getBoundingClientRect();
+        const pct  = Math.min(95, Math.max(5, ((clientX - rect.left) / rect.width) * 100));
+        setAdamX(pct);
+      }, []);
+
+      useEffect(() => {
+        const el = gameAreaRef.current;
+        if (!el) return;
+        const onTouchMove  = (e) => { e.preventDefault(); handlePointerMove(e.touches[0].clientX); };
+        const onTouchStart = (e) => { e.preventDefault(); handlePointerMove(e.touches[0].clientX); };
+        const onMouseMove  = (e) => { if (e.buttons > 0) handlePointerMove(e.clientX); };
+        const onClick      = (e) => handlePointerMove(e.clientX);
+        el.addEventListener('touchmove',  onTouchMove,  { passive: false });
+        el.addEventListener('touchstart', onTouchStart, { passive: false });
+        el.addEventListener('mousemove',  onMouseMove);
+        el.addEventListener('click',      onClick);
+        return () => {
+          el.removeEventListener('touchmove',  onTouchMove);
+          el.removeEventListener('touchstart', onTouchStart);
+          el.removeEventListener('mousemove',  onMouseMove);
+          el.removeEventListener('click',      onClick);
+        };
+      }, [handlePointerMove]);
+
+
+      // Game loop
+      useEffect(() => {
+        if (phase !== 'playing') {
+          cancelAnimationFrame(animFrameRef.current);
+          return;
+        }
+
+        const cfg = configRef.current;
+
+        const loop = (timestamp) => {
+          if (phaseRef.current !== 'playing') return;
+
+          // Spawn new item
+          if (timestamp - lastSpawnRef.current > cfg.spawnInterval) {
+            lastSpawnRef.current = timestamp;
+            const pool = Math.random() < 0.55 ? GRACE_ITEMS : TEMPT_ITEMS;
+            const template = pool[Math.floor(Math.random() * pool.length)];
+            const newItem = {
+              id: nextIdRef.current++,
+              emoji: template.emoji,
+              label: template.label,
+              type:  template.type,
+              bbox:  template.bbox,
+              x: 5 + Math.random() * 90,
+              y: -8,
+            };
+            setItems(prev => [...prev, newItem]);
+          }
+
+          // Move items down & check collision
+          setItems(prev => {
+            const adamXVal = adamX;
+            const updated = [];
+            for (const item of prev) {
+              const newY = item.y + cfg.fallSpeed;
+
+              // Collision zone: y 63-78, x within ±17% of adam (바구니 높이에 맞춰서 Y축 상향 및 가로 확대)
+              if (newY >= 63 && newY <= 78) {
+                const diff = Math.abs(item.x - adamXVal);
+                if (diff < 17) {
+                  // Caught!
+                  if (item.type === 'grace') {
+                    scoreRef.current += 1;
+                    setScore(s => s + 1);
+                    setCatchText(`+1 ${item.emoji}`);
+                    setTimeout(() => setCatchText(''), 700);
+                    synth.playN();
+                    // Check level clear
+                    const cfg2 = STAGE_CONFIGS[currentLevel - 1];
+                    if (scoreRef.current >= cfg2.targetScore) {
+                      setTimeout(() => {
+                        if (phaseRef.current !== 'playing') return;
+                        if (currentLevel === 5) {
+                          const bonus = Math.max(0, Math.round(scoreRef.current - cfg2.targetScore) * 2);
+                          setFinalBonusScore(bonus);
+                          setPhase('allClear');
+                          phaseRef.current = 'allClear';
+                          synth.playVic();
+                          confetti({ particleCount: 120, spread: 80, origin: { y: 0.5 } });
+                        } else {
+                          setPhase('levelClear');
+                          phaseRef.current = 'levelClear';
+                          synth.playSuccess();
+                          confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } });
+                        }
+                      }, 200);
+                    }
+                  } else {
+                    // Temptation caught
+                    heartsRef.current = Math.max(0, heartsRef.current - 1);
+                    setHearts(heartsRef.current);
+                    setRedFlash(true);
+                    setTimeout(() => setRedFlash(false), 500);
+                    setCatchText(`💔 ${item.label}`);
+                    setTimeout(() => setCatchText(''), 800);
+                    synth.playO();
+                    if (heartsRef.current <= 0) {
+                      setTimeout(() => {
+                        setPhase('gameOver');
+                        phaseRef.current = 'gameOver';
+                        synth.playOver();
+                      }, 300);
+                    }
+                  }
+                  continue; // remove from array
+                }
+              }
+
+              if (newY > 105) continue; // off screen
+              updated.push({ ...item, y: newY });
+            }
+            return updated;
+          });
+
+          animFrameRef.current = requestAnimationFrame(loop);
+        };
+
+        animFrameRef.current = requestAnimationFrame(loop);
+        return () => cancelAnimationFrame(animFrameRef.current);
+      }, [phase, currentLevel, adamX]);
+
+      const startNextLevel = () => {
+        const nextLvl = currentLevel + 1;
+        configRef.current = STAGE_CONFIGS[nextLvl - 1];
+        setCurrentLevel(nextLvl);
+        setScore(0); scoreRef.current = 0;
+        setHearts(3); heartsRef.current = 3; // 목숨 3개
+        setItems([]); itemsRef.current = [];
+        lastSpawnRef.current = 0;
+        setPhase('playing'); phaseRef.current = 'playing';
+        setCatchText('');
+        setRedFlash(false);
+      };
+
+      const restartGame = () => {
+        configRef.current = STAGE_CONFIGS[currentLevel - 1];
+        // 현재 레벨(currentLevel)을 그대로 유지하고 해당 레벨에서 다시 시작합니다.
+        setScore(0); scoreRef.current = 0;
+        setHearts(3); heartsRef.current = 3; // 목숨 3개
+        setItems([]); itemsRef.current = [];
+        lastSpawnRef.current = 0;
+        setPhase('playing'); phaseRef.current = 'playing';
+        setCatchText('');
+        setRedFlash(false);
+        setAdamX(50);
+      };
+
+      // Helper function to extract sprite style from 3game.png
+      const getItemStyle = (bbox, targetSize = 44) => {
+        const [x1, y1, x2, y2] = bbox;
+        const w = x2 - x1;
+        const h = y2 - y1;
+        const scale = targetSize / Math.max(w, h);
+        return {
+          width: `${w * scale}px`,
+          height: `${h * scale}px`,
+          backgroundImage: "url('3game.png')",
+          backgroundSize: `${1024 * scale}px ${1536 * scale}px`,
+          backgroundPosition: `-${x1 * scale}px -${y1 * scale}px`,
+          backgroundRepeat: 'no-repeat',
+        };
+      };
+
+      const cfg = STAGE_CONFIGS[currentLevel - 1];
+
+      return (
+        <div
+          ref={gameAreaRef}
+          className="flex-1 relative overflow-hidden select-none"
+          style={{
+            backgroundImage: "url('3gamebg.png')",
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            cursor: 'none',
+          }}
+        >
+          {/* Red flash overlay */}
+          {redFlash && (
+            <div className="absolute inset-0 bg-red-500/30 pointer-events-none z-20 animate-pulse" />
+          )}
+
+          {/* HUD (제한시간 표시 제거) */}
+          <div className="absolute top-0 inset-x-0 z-10 flex justify-between items-center px-3 py-2 bg-black/40 backdrop-blur-sm">
+            <div className="text-white font-black text-xs font-layton-myeongjo">
+              Lv.{currentLevel}/5
+            </div>
+            <div className="text-white font-black text-xs font-layton-myeongjo">
+              🎯 {score}/{cfg.targetScore}
+            </div>
+            <div className="flex gap-0.5 text-sm">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <span key={i} className={i < hearts ? 'opacity-100' : 'opacity-20'}>❤️</span>
+              ))}
+            </div>
+          </div>
+
+          {/* Falling items (renders as sprite images from 3game.png) */}
+          {items.map(item => {
+            const itemStyle = getItemStyle(item.bbox, 44);
+            return (
+              <div
+                key={item.id}
+                className="absolute pointer-events-none"
+                style={{
+                  left: `${item.x}%`,
+                  top:  `${item.y}%`,
+                  transform: 'translate(-50%, -50%)',
+                  filter: item.type === 'tempt' ? 'drop-shadow(0 0 6px rgba(220,38,38,0.7))' : 'drop-shadow(0 0 6px rgba(250,204,21,0.8))',
+                  ...itemStyle
+                }}
+              />
+            );
+          })}
+
+          {/* Catch feedback text */}
+          {catchText && (
+            <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white font-black text-lg z-20 pointer-events-none scale-in-out">
+              {catchText}
+            </div>
+          )}
+
+          {/* Adam character (adam.png) at bottom - 크기 추가 확대 */}
+          <div
+            className="absolute z-10 pointer-events-none"
+            style={{
+              left: `${adamX}%`,
+              bottom: '1%',
+              transform: 'translateX(-50%)',
+              width: '135px',
+              height: '202px',
+              backgroundImage: "url('adam.png')",
+              backgroundSize: 'contain',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+              filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.35))'
+            }}
+          />
+
+          {/* Level Clear Modal */}
+          {phase === 'levelClear' && (
+            <div className="absolute inset-0 bg-black/70 z-30 flex items-center justify-center p-4">
+              <div className="bg-[#fdfaf2] border-4 border-[#8b5a2b] p-5 rounded-2xl shadow-2xl max-w-[260px] w-full text-center scale-in font-layton-myeongjo">
+                <span className="text-4xl block mb-2">🎉</span>
+                <h3 className="font-black text-sm text-layton-amber mb-1">Lv.{currentLevel} 클리어!</h3>
+                <p className="text-[10px] text-layton-dark leading-relaxed mb-4 break-keep">
+                  하나님의 은혜 아이템을 멋지게 받아냈어요!<br />다음 단계는 조금 더 빨라집니다.
+                </p>
+                <button
+                  onClick={startNextLevel}
+                  className="w-full py-2 bg-gradient-to-b from-[#e7b85e] to-[#ab7418] text-[#2c1a0c] font-black text-xs rounded-xl border-2 border-[#ffe8b5] shadow active:scale-95"
+                >
+                  다음 단계 도전 ➡️
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Game Over Modal */}
+          {phase === 'gameOver' && (
+            <div className="absolute inset-0 bg-black/80 z-30 flex items-center justify-center p-4">
+              <div className="bg-[#fdfaf2] border-4 border-red-800 p-5 rounded-2xl shadow-2xl max-w-[260px] w-full text-center scale-in font-layton-myeongjo">
+                <span className="text-4xl block mb-2">🥀</span>
+                <h3 className="font-black text-sm text-red-800 mb-1">게임 오버!</h3>
+                <p className="text-[10px] text-layton-dark leading-relaxed mb-4 break-keep">
+                  하트를 모두 잃었어요!<br />유혹의 아이템을 피하며 다시 도전해 보세요.
+                </p>
+                <button
+                  onClick={restartGame}
+                  className="w-full py-2 bg-gradient-to-b from-red-600 to-red-800 text-white font-black text-xs rounded-xl border-2 border-red-400 shadow active:scale-95"
+                >
+                  다시 도전 🔄
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* All Clear - Scripture Card */}
+          {phase === 'allClear' && (
+            <div className="absolute inset-0 bg-[#e0f7e9] z-30 flex flex-col items-center justify-center p-5 overflow-auto">
+              <div className="absolute bottom-0 inset-x-0 h-32 bg-[#86efac]/80 rounded-t-[120px] pointer-events-none" />
+              <div className="absolute bottom-0 inset-x-0 h-20 bg-[#4ade80] rounded-t-[150px] pointer-events-none" />
+              <div className="absolute bottom-16 left-4 text-4xl animate-bounce">🌺</div>
+              <div className="absolute bottom-16 right-4 text-4xl animate-pulse">🌸</div>
+              <div className="absolute top-8 left-6 text-3xl animate-pulse opacity-70">🕊️</div>
+              <div className="absolute top-8 right-6 text-3xl animate-bounce opacity-70">🕊️</div>
+
+              {/* Scripture card */}
+              <div className="relative z-10 bg-[#fdfaf2] border-4 border-[#8b5a2b] p-5 rounded-2xl shadow-[0_15px_40px_rgba(0,0,0,0.3)] max-w-[290px] w-full text-center font-layton-myeongjo">
+                <span className="text-3xl block mb-2">🌿</span>
+                <h3 className="font-black text-xs text-layton-amber tracking-wider border-b border-layton-brown/20 pb-2 uppercase">
+                  성령의 열매
+                </h3>
+
+                <p className="text-[11px] text-[#4a2e13] font-bold leading-relaxed my-4 break-keep">
+                  "오직 성령의 열매는 사랑과 희락과 화평과 오래 참음과 자비와 양선과 충성과 온유와 절제니"
+                </p>
+                <p className="text-[10px] text-[#8b5a2b] font-bold mb-3">(갈라디아서 5:22-23)</p>
+
+                {/* Score banner */}
+                <div className="bg-gradient-to-r from-emerald-900/50 to-emerald-800/30 border border-emerald-400/40 rounded-xl p-2.5 mb-4">
+                  <div className="text-[10px] text-emerald-300 font-bold">🏆 획득 점수</div>
+                  <div className="flex items-baseline justify-center gap-2 mt-0.5">
+                    <span className="text-yellow-200 font-black text-sm">+40P</span>
+                    {finalBonusScore > 0 && (
+                      <span className="text-emerald-300 font-black text-sm">+{finalBonusScore}P 보너스!</span>
+                    )}
+                  </div>
+                  <div className="text-[9px] text-white/40 mt-0.5">초과 점수 × 2 = 보너스</div>
+                </div>
+
+                <div className="w-full bg-[#f4edd4] border border-[#d2b48c] p-2.5 rounded-xl text-left text-[9px] text-[#5c4033] leading-relaxed break-keep mb-4">
+                  💡 <strong>메시지:</strong> 아담이 에덴에서 하나님과 함께했던 것처럼, 우리도 성령의 열매를 마음에 담아 유혹을 이기고 사랑으로 가득한 삶을 살 수 있어요!
+                </div>
+
+                <button
+                  onClick={() => onSolved('puzzle-003', finalBonusScore)}
+                  className="w-full py-2 bg-gradient-to-b from-[#e7b85e] to-[#ab7418] text-[#2c1a0c] font-black text-xs rounded-xl border-2 border-[#ffe8b5] shadow-md hover:scale-[1.02] active:scale-95 transition-all"
+                >
+                  다음 스테이지로 ➡️
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // ─────────────────────────────────────────────
+    // STAGE 4: 방주의 거짓말쟁이 (PuzzleNoahDeduction)
+    // ─────────────────────────────────────────────
+    function PuzzleNoahDeduction({ coins, onSpendCoins, onBack, onSolved }) {
+      const { useState, useEffect } = React;
+
+      // 스프라이트 자르기 정보 (4stagei.png 원본 크기: 1024x1536)
+      const SPRITE_INFO = {
+        footprint: { x1: 49, y1: 168, w: 339, h: 209 },
+        wood: { x1: 656, y1: 163, w: 278, h: 234 },
+        hammer: { x1: 77, y1: 507, w: 272, h: 268 },
+        nail: { x1: 671, y1: 565, w: 221, h: 167 },
+        sawdust: { x1: 78, y1: 906, w: 291, h: 180 },
+        memo: { x1: 658, y1: 840, w: 239, h: 282 },
+        blueprint: { x1: 66, y1: 1225, w: 337, h: 246 }
+      };
+
+      // 단서 리스트 정의
+      const CLUES = [
+        { id: 'footprint', name: '동물 발자국', desc: '방주 주변에 찍힌 거대하고 선명한 동물 발자국이다. 동물들이 사방에서 모여들고 있음을 증명한다.' },
+        { id: 'wood', name: '나무 조각', desc: '방주를 지을 때 사용한 단단한 고페르 나무 조각이다. 물이 스며들지 않도록 역청이 칠해져 있다.' },
+        { id: 'hammer', name: '낡은 망치', desc: '방주 골조를 고정할 때 사용한 노아의 낡은 망치다. 오랜 시간 동안 쉬지 않고 일한 흔적이 묻어 있다.' },
+        { id: 'nail', name: '놋못', desc: '나무 널빤지들을 튼튼하게 결합하기 위해 사용된 청동 놋못이다.' },
+        { id: 'sawdust', name: '나무 톱밥', desc: '수많은 나무를 베고 다듬으며 쌓인 톱밥 더미다. 방주 건설이 오랜 시간 지속되었음을 말해준다.' },
+        { id: 'memo', name: '노아의 메모', desc: '노아가 가죽에 적어둔 메모다. \'하나님의 명령대로 길이 300규빗, 너비 50규빗, 높이 30규빗으로 지으라...\'라고 기록되어 있다.' },
+        { id: 'blueprint', name: '설계도 조각', desc: '양가죽에 그려진 거대한 3층 방주의 설계도 일부다. 하늘의 크기와 규격에 완벽히 맞추어져 있다.' }
+      ];
+
+      // 7개 단서 배치 좌표 (배경 그림 구조에 매칭)
+      const CLUE_POSITIONS = [
+        { clueId: 'footprint', x: 15, y: 55 },
+        { clueId: 'wood', x: 72, y: 65 },
+        { clueId: 'hammer', x: 40, y: 72 },
+        { clueId: 'nail', x: 58, y: 48 },
+        { clueId: 'sawdust', x: 22, y: 78 },
+        { clueId: 'memo', x: 82, y: 42 },
+        { clueId: 'blueprint', x: 48, y: 28 }
+      ];
+
+      // NPC 진술 리스트
+      const NPCS = [
+        { id: 'A', name: '마을 사람 A', emoji: '👨', text: '“노아는 아무 이유 없이 저 거대한 배를 산 위에다 만들고 있어. 시간 낭비야!”' },
+        { id: 'B', name: '마을 사람 B', emoji: '👩', text: '“동물들이 암수 둘씩 신기하게 짝을 지어서 방주 안으로 모이고 있는걸 봤어.”' },
+        { id: 'C', name: '마을 사람 C', emoji: '👴', text: '“하나님은 저 노아라는 노인에게 아무런 말씀도 하지 않으셨고 약속도 한 적 없어!”', isLiar: true },
+        { id: 'D', name: '마을 사람 D', emoji: '👦', text: '“노아 할아버지는 정말 오랫동안 정성을 다해 방주를 단단히 만들고 있어.”' }
+      ];
+
+      const [searchedClues, setSearchedClues] = useState({});
+      const [activeClue, setActiveClue] = useState(null);
+      const [showNotes, setShowNotes] = useState(false);
+      const [phase, setPhase] = useState('explore'); // 'explore' | 'deduce' | 'cutscene' | 'clear'
+      const [selectedNPC, setSelectedNPC] = useState(null);
+      const [showLiarAlert, setShowLiarAlert] = useState(false);
+      const [cutsceneFrame, setCutsceneFrame] = useState(0);
+
+      const searchedCount = Object.keys(searchedClues).filter(k => searchedClues[k]).length;
+      const canDeduce = searchedCount >= 5;
+
+      // 스프라이트 렌더링용 스타일 생성 함수
+      const getSpriteStyle = (clueId, targetWidth = 60) => {
+        const sprite = SPRITE_INFO[clueId];
+        if (!sprite) return {};
+        const { x1, y1, w, h } = sprite;
+        const scale = targetWidth / w;
+        const finalHeight = h * scale;
+        const bgWidth = 1024 * scale;
+        const bgHeight = 1536 * scale;
+        const posX = -x1 * scale;
+        const posY = -y1 * scale;
+
+        return {
+          backgroundImage: "url('4stagei.png')",
+          backgroundPosition: `${posX}px ${posY}px`,
+          backgroundSize: `${bgWidth}px ${bgHeight}px`,
+          width: `${targetWidth}px`,
+          height: `${finalHeight}px`,
+          backgroundRepeat: 'no-repeat'
+        };
+      };
+
+      const handleClueClick = (clue) => {
+        setSearchedClues(prev => ({ ...prev, [clue.id]: true }));
+        setActiveClue(clue);
+        synth.playClick();
+      };
+
+      const handleNPCClick = (npc) => {
+        setSelectedNPC(npc);
+        if (npc.isLiar) {
+          synth.playSuccess();
+          setPhase('cutscene');
+        } else {
+          synth.playO();
+          setShowLiarAlert(true);
+        }
+      };
+
+      // 컷신 애니메이션 이펙트
+      useEffect(() => {
+        if (phase !== 'cutscene') return;
+        const interval = setInterval(() => {
+          setCutsceneFrame(f => (f + 1) % 4);
+        }, 800);
+        return () => clearInterval(interval);
+      }, [phase]);
+
+      return (
+        <div className="relative w-full max-w-md mx-auto h-[600px] bg-gradient-to-b from-[#6b4724] to-[#3a220f] overflow-hidden rounded-3xl shadow-2xl flex flex-col font-layton-myeongjo text-[#5c4033] border-4 border-[#503319] select-none">
+          
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-3 bg-[#523317] border-b-2 border-[#3d230d] text-white z-10">
+            <button onClick={onBack} className="p-1 text-sm bg-[#784d28] hover:bg-[#8e5c32] active:scale-95 rounded-lg border border-[#9a6a3b] transition-all">
+              ⬅️ 지도
+            </button>
+            <div className="text-center">
+              <span className="text-[9px] text-[#cca274] font-black uppercase tracking-wider">STAGE 4</span>
+              <h2 className="text-xs font-black text-[#ffd19a]">방주의 거짓말쟁이</h2>
+            </div>
+            <div className="px-2 py-0.5 bg-[#ab7a4e] text-[9px] rounded-full font-bold border border-[#ffd5af]">
+              {phase === 'explore' ? '조사 모드 🔎' : phase === 'deduce' ? '추리 모드 💬' : '스토리 🎬'}
+            </div>
+          </div>
+
+          {/* 1. EXPLORE PHASE */}
+          {phase === 'explore' && (
+            <div 
+              className="relative flex-1 w-full overflow-hidden flex flex-col justify-between" 
+              style={{ 
+                backgroundImage: "url('4stageb.png')", 
+                backgroundSize: 'cover', 
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat'
+              }}
+            >
+              
+              {/* Construction area overlay visual shadow for depth */}
+              <div className="absolute inset-0 bg-black/10 pointer-events-none"></div>
+
+              {/* Clue Hotspots (Rendered via sprite clipping) */}
+              {CLUE_POSITIONS.map(pos => {
+                const clue = CLUES.find(c => c.id === pos.clueId);
+                const isSearched = searchedClues[clue.id];
+                return (
+                  <button
+                    key={clue.id}
+                    onClick={() => handleClueClick(clue)}
+                    className="absolute group flex flex-col items-center justify-center p-1 rounded-xl transition-all duration-300 hover:scale-115 active:scale-95 hover:brightness-110 filter drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]"
+                    style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
+                  >
+                    <div className="relative">
+                      {/* Sprited item crop */}
+                      <div style={getSpriteStyle(clue.id, 45)} className="rounded-lg" />
+                      
+                      {isSearched ? (
+                        <div className="absolute -top-2 -right-2 bg-green-600 text-white rounded-full w-4.5 h-4.5 flex items-center justify-center text-[9px] font-black border-2 border-white shadow-md">
+                          ✔
+                        </div>
+                      ) : (
+                        <div className="absolute -top-2.5 -right-2.5 bg-yellow-400 text-[#4e2d0c] rounded-full w-4 h-4 flex items-center justify-center text-[8px] font-bold border border-[#ffe8b5] animate-ping">
+                          ❓
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+
+              {/* Lower HUD buttons */}
+              <div className="absolute inset-x-0 bottom-4 px-4 flex justify-between items-center z-10">
+                <button
+                  onClick={() => setShowNotes(true)}
+                  className="flex items-center gap-1 px-3 py-1.5 bg-[#4a2e16] hover:bg-[#5a391d] active:scale-95 text-[#e4c09d] text-[10px] font-bold rounded-xl border border-[#714624] shadow-lg transition-all"
+                >
+                  📓 단서 노트
+                </button>
+                <div className="bg-[#412811]/85 border border-[#6b4728] px-3 py-1 rounded-full text-[9px] text-[#ffd19a] font-bold shadow-md">
+                  조사 완료: {searchedCount} / 7
+                </div>
+                <button
+                  onClick={() => setPhase('deduce')}
+                  disabled={!canDeduce}
+                  className={`px-4 py-2 text-xs font-black rounded-xl border-2 shadow-lg transition-all ${canDeduce ? 'bg-gradient-to-b from-[#f59e0b] to-[#b45309] text-white border-[#fef3c7] hover:scale-105 active:scale-95' : 'bg-gray-400 text-gray-200 border-gray-300 opacity-50 cursor-not-allowed'}`}
+                >
+                  🔍 추리 시작
+                </button>
+              </div>
+
+              {/* Active Clue Detail Modal (Layton Style Pop) */}
+              {activeClue && (
+                <div className="absolute inset-0 bg-black/55 z-30 flex items-center justify-center p-4">
+                  <div className="bg-[#fffdf9] border-4 border-[#855422] p-5 rounded-2xl shadow-2xl text-center max-w-[270px] w-full pop-in font-layton-myeongjo">
+                    <div className="flex justify-center mb-2 filter drop-shadow-md">
+                      {/* Scaled sprite for popup */}
+                      <div style={getSpriteStyle(activeClue.id, 90)} className="mx-auto rounded-lg" />
+                    </div>
+                    <h3 className="font-black text-sm text-[#5a3615] mt-2 border-b border-[#cca379] pb-1 inline-block px-4">
+                      {activeClue.name}
+                    </h3>
+                    <p className="text-[10px] text-gray-600 mt-3 leading-relaxed text-justify break-keep">
+                      {activeClue.desc}
+                    </p>
+                    <button
+                      onClick={() => setActiveClue(null)}
+                      className="w-full mt-4 py-2 bg-[#855422] text-white font-black text-[10px] rounded-lg hover:bg-[#6c4219] transition-all active:scale-95 shadow"
+                    >
+                      닫기 ✖
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 2. DEDUCE PHASE (NPC 진술 판독) */}
+          {phase === 'deduce' && (
+            <div className="flex-1 w-full bg-[#fdfaf2] p-4 flex flex-col justify-between overflow-y-auto">
+              
+              <div className="text-center border-b border-[#825324]/30 pb-2 mb-3">
+                <span className="text-[9px] text-[#8c653f] font-bold tracking-widest uppercase">TESTIMONIAL ANALYSIS</span>
+                <h3 className="font-black text-sm text-[#4a2e16] mt-0.5">거짓말을 하는 사람을 찾으세요!</h3>
+                <p className="text-[9px] text-gray-500">지금까지 수집한 성경 단서들을 토대로 잘못 말하는 1인을 터치하세요.</p>
+              </div>
+
+              {/* NPC speech bubbles list */}
+              <div className="flex-1 flex flex-col gap-3 justify-center">
+                {NPCS.map(npc => (
+                  <button
+                    key={npc.id}
+                    onClick={() => handleNPCClick(npc)}
+                    className="flex items-start gap-3 bg-white border-2 border-[#cca379] hover:border-[#825324] hover:bg-[#fefcf8] rounded-2xl p-3 shadow-sm transition-all active:scale-[0.98]"
+                  >
+                    <div className="flex flex-col items-center shrink-0">
+                      <span className="text-3.5xl filter drop-shadow-[0_1px_3px_rgba(0,0,0,0.15)]">{npc.emoji}</span>
+                      <span className="text-[8px] bg-[#825324] text-white px-1.5 py-0.5 rounded-full font-bold mt-1">
+                        {npc.name}
+                      </span>
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="text-[10px] text-[#3a2007] leading-relaxed break-keep font-medium">
+                        {npc.text}
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              {/* Lower notes & return button */}
+              <div className="mt-4 flex gap-2">
+                <button
+                  onClick={() => setShowNotes(true)}
+                  className="flex-1 py-2 bg-[#4a2e16] hover:bg-[#5a391d] text-[#e4c09d] text-[10px] font-bold rounded-xl border border-[#714624] transition-all shadow"
+                >
+                  📓 단서 노트 확인
+                </button>
+                <button
+                  onClick={() => setPhase('explore')}
+                  className="flex-1 py-2 bg-[#f3f4f6] hover:bg-gray-100 text-gray-700 text-[10px] font-bold rounded-xl border border-gray-300 transition-all shadow"
+                >
+                  🔎 단서 더 찾으러 가기
+                </button>
+              </div>
+
+              {/* Incorrect guess alert modal */}
+              {showLiarAlert && (
+                <div className="absolute inset-0 z-30 bg-black/55 flex items-center justify-center p-4">
+                  <div className="bg-[#fff5f5] border-4 border-[#dc2626] p-5 rounded-2xl shadow-2xl text-center max-w-[250px] w-full pop-in">
+                    <span className="text-4.5xl">💡🧐</span>
+                    <h4 className="font-black text-sm text-[#dc2626] mt-2">단서를 다시 조사해보자.</h4>
+                    <p className="text-[10px] text-gray-600 mt-1 leading-relaxed">
+                      지목한 사람의 진술은 수집된 단서들과 배치되지 않는 사실인 것 같아요.
+                    </p>
+                    <button
+                      onClick={() => {
+                        setShowLiarAlert(false);
+                        setPhase('explore'); // 오답 시 맵으로 복귀
+                      }}
+                      className="w-full mt-4 py-2 bg-gradient-to-b from-[#ef4444] to-[#b91c1c] text-white font-black text-xs rounded-xl shadow-md transition-all active:scale-95"
+                    >
+                      단서 찾기로 돌아가기 ➡️
+                    </button>
+                  </div>
+                </div>
+              )}
+
+            </div>
+          )}
+
+          {/* 3. CUTSCENE PHASE (노아가 말씀을 들음) */}
+          {phase === 'cutscene' && (
+            <div className="flex-1 w-full bg-[#1e293b] overflow-hidden flex flex-col justify-between p-4 relative">
+              
+              {/* Starry Night Sky and Mountain background (CSS-driven animation) */}
+              <div className="absolute inset-0 bg-[#0f172a]" style={{ backgroundImage: "radial-gradient(circle at 50% 30%, #1e293b 0%, #090d16 100%)" }}></div>
+
+              {/* Stars twinkling */}
+              <div className="absolute inset-0 opacity-40">
+                <div className="absolute top-8 left-12 w-1 h-1 bg-white rounded-full animate-ping"></div>
+                <div className="absolute top-20 right-16 w-1.5 h-1.5 bg-yellow-200 rounded-full animate-pulse"></div>
+                <div className="absolute top-36 left-28 w-1 h-1 bg-white rounded-full animate-pulse delay-500"></div>
+              </div>
+
+              {/* Detective Success Banner */}
+              <div className="relative z-10 text-center mt-2 animate-bounce">
+                <span className="bg-yellow-400 text-yellow-950 font-black text-sm px-6 py-1.5 rounded-full border-4 border-white shadow-lg tracking-widest inline-block">
+                  🕵️‍♂️ 탐정 성공!
+                </span>
+              </div>
+
+              {/* Animated Scene Area */}
+              <div className="relative flex-1 w-full flex items-center justify-center z-10">
+                {/* Noah Figure */}
+                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center">
+                  {/* Kneeling Noah Emoji */}
+                  <span className="text-7xl filter drop-shadow-[0_4px_10px_rgba(253,224,71,0.5)] transform scale-x-[-1] animate-pulse">
+                    🧎‍♂️
+                  </span>
+                  <span className="text-[9px] bg-slate-900/80 text-yellow-300 font-bold px-2 py-0.5 rounded-full border border-yellow-500/20 mt-1">
+                    경청하는 노아
+                  </span>
+                </div>
+
+                {/* Scaffolding ark under construction draft in darkness */}
+                <div className="absolute bottom-0 left-6 right-6 h-12 bg-amber-950/40 rounded-t-xl border-t border-amber-900/40 pointer-events-none flex items-center justify-center">
+                  <span className="text-xl opacity-40">🚢🚧</span>
+                </div>
+
+                {/* God's voice ray beam effect */}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-[320px] bg-gradient-to-b from-yellow-300/45 via-yellow-200/20 to-transparent clip-path-beam animate-pulse"></div>
+              </div>
+
+              {/* Captions sub */}
+              <div className="relative z-10 bg-slate-950/80 border border-yellow-500/30 p-3 rounded-2xl text-center">
+                <p className="text-yellow-300 text-[10.5px] leading-relaxed break-keep font-medium">
+                  {cutsceneFrame === 0 && "“노아야, 너는 고페르 나무로 너를 위하여 방주를 만들고...”"}
+                  {cutsceneFrame === 1 && "“내가 홍수를 땅에 일으켜 무릇 생명의 기운이 있는 모든 육체를 천하에서 멸절하리니...”"}
+                  {cutsceneFrame === 2 && "“그러나 너와는 내가 내 언약을 세우리니 너는 네 아들들과 네 아내와 네 며느리들과 함께 그 방주로 들어가라.”"}
+                  {cutsceneFrame === 3 && "노아는 여호와께서 자기에게 명하신 대로 다 준행하였습니다."}
+                </p>
+                <div className="flex gap-1 justify-center mt-2">
+                  <span className={`w-1.5 h-1.5 rounded-full ${cutsceneFrame === 0 ? 'bg-yellow-400' : 'bg-gray-600'}`}></span>
+                  <span className={`w-1.5 h-1.5 rounded-full ${cutsceneFrame === 1 ? 'bg-yellow-400' : 'bg-gray-600'}`}></span>
+                  <span className={`w-1.5 h-1.5 rounded-full ${cutsceneFrame === 2 ? 'bg-yellow-400' : 'bg-gray-600'}`}></span>
+                  <span className={`w-1.5 h-1.5 rounded-full ${cutsceneFrame === 3 ? 'bg-yellow-400' : 'bg-gray-600'}`}></span>
+                </div>
+              </div>
+
+              <div className="relative z-10 mt-3">
+                <button
+                  onClick={() => setPhase('clear')}
+                  className="w-full py-2 bg-gradient-to-r from-yellow-400 to-amber-500 hover:scale-102 active:scale-95 text-yellow-950 font-black text-xs rounded-xl shadow-lg border-2 border-white transition-all"
+                >
+                  🌈 말씀 약속 카드 받기 ➡️
+                </button>
+              </div>
+
+            </div>
+          )}
+
+          {/* 4. FINAL SCRIPTURE CARD OVERLAY (CLEAR PHASE) */}
+          {phase === 'clear' && (
+            <div className="absolute inset-0 z-40 bg-black/75 flex items-center justify-center p-4">
+              <div className="bg-[#fffbf0] border-4 border-[#855422] p-5 rounded-2xl shadow-2xl text-center max-w-[320px] w-full pop-in relative overflow-hidden flex flex-col items-center">
+                
+                {/* Rainbow background pattern */}
+                <div className="absolute top-0 left-0 right-0 h-4 bg-gradient-to-r from-red-500 via-yellow-400 via-green-500 via-blue-500 to-purple-600"></div>
+
+                <div className="mt-3 flex flex-col items-center gap-1">
+                  <span className="text-4xl animate-bounce">🌈🚢</span>
+                  <span className="text-[10px] text-emerald-700 font-bold tracking-widest uppercase">STAGE 4 CLEAR</span>
+                  <h3 className="font-black text-sm text-[#4e2d0c]">방주의 짝과 하나님의 언약</h3>
+                </div>
+
+                <div className="my-4 bg-[#f6efe2] border border-[#dfd4be] p-3 rounded-xl max-h-[160px] overflow-y-auto">
+                  <p className="font-layton-myeongjo text-[11px] font-medium text-[#52371b] leading-relaxed text-justify break-keep">
+                    "정결한 짐승과 부정한 짐승과 새와 땅에 기는 모든 것은 하나님이 노아에게 명하신 대로 암수 둘씩 노아에게 나아와 방주로 들어갔으니"
+                  </p>
+                  <p className="text-right text-[9px] text-emerald-800 font-bold mt-1.5">
+                    — 창세기 7:8-9
+                  </p>
+                </div>
+
+                <div className="w-full bg-[#e8f6ed] border border-[#a7d7b9] p-2 rounded-lg text-left text-[8.5px] text-[#1e5831] leading-relaxed mb-4 break-keep">
+                  💡 <strong>하나님의 은혜:</strong> 마을 사람 C는 하나님이 아무 말씀도 하지 않으셨다고 비난했지만, 노아는 하나님의 신실한 약속과 말씀을 듣고 방주를 지었습니다. 그 결과로 모든 생명이 안전하게 보존되었습니다.
+                </div>
+
+                <button
+                  onClick={() => onSolved('puzzle-004', 0)}
+                  className="w-full py-2.5 bg-gradient-to-b from-[#e7b85e] to-[#ab7418] text-[#2c1a0c] font-black text-xs rounded-xl border-2 border-[#ffe8b5] shadow-md hover:scale-[1.02] active:scale-95 transition-all"
+                >
+                  다음 스테이지로 ➡️
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* 5. NOTES OVERLAY (단서 노트 📓) */}
+          {showNotes && (
+            <div className="absolute inset-0 z-40 bg-black/60 flex items-center justify-end">
+              <div className="bg-[#f5ebd7] border-l-4 border-[#855422] w-[260px] h-full shadow-2xl p-4 flex flex-col justify-between slide-in font-layton-myeongjo">
+                
+                <div>
+                  <div className="flex items-center justify-between border-b border-[#855422]/30 pb-2 mb-3">
+                    <span className="text-xs font-black text-[#5a3615]">📓 단서 노트 (수집품)</span>
+                    <button onClick={() => setShowNotes(false)} className="text-[#855422] hover:text-[#5a3615] font-black text-sm">
+                      ✖
+                    </button>
+                  </div>
+
+                  <div className="flex flex-col gap-2 max-h-[440px] overflow-y-auto pr-1">
+                    {CLUES.map(clue => {
+                      const isSearched = searchedClues[clue.id];
+                      return (
+                        <div
+                          key={clue.id}
+                          className={`flex items-start gap-2.5 p-2 rounded-xl border transition-all ${isSearched ? 'bg-white border-[#cca379]' : 'bg-[#e9dec6] border-[#dfd2b5] opacity-50'}`}
+                        >
+                          <div className="shrink-0">
+                            {isSearched ? (
+                              <div style={getSpriteStyle(clue.id, 40)} className="rounded-md border border-[#cca379]" />
+                            ) : (
+                              <div className="w-10 h-10 bg-gray-300/40 rounded-md border border-dashed border-gray-400 flex items-center justify-center text-lg">
+                                ❓
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-left flex-1">
+                            <h4 className="text-[9.5px] font-black text-[#5a3615]">
+                              {clue.name} {isSearched && '✔'}
+                            </h4>
+                            <p className="text-[8.5px] text-gray-500 leading-relaxed mt-0.5 break-keep">
+                              {isSearched ? clue.desc : '아직 조사하지 않은 단서입니다.'}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setShowNotes(false)}
+                  className="w-full py-2 bg-[#855422] text-white font-black text-xs rounded-xl shadow transition-all active:scale-95 mt-4"
+                >
+                  수첩 닫기 📓
+                </button>
+
+              </div>
+            </div>
+          )}
+
+        </div>
+      );
+    }
+
+
+    // ─────────────────────────────────────────────
+
+
+    function PuzzleEdenAnimals({ coins, onSpendCoins, onBack, onSolved }) {
+      const [currentLevel, setCurrentLevel] = useState(1);
+      const [cards, setCards] = useState([]);
+      const [selectedCards, setSelectedCards] = useState([]);
+      const [matchedText, setMatchedText] = useState('');
+      const [showLevelClearedPopup, setShowLevelClearedPopup] = useState(false);
+      const [showFinalScriptureCard, setShowFinalScriptureCard] = useState(false);
+      const [clicksLeft, setClicksLeft] = useState(100);
+      const [isGameOver, setIsGameOver] = useState(false);
+      const [isPreviewing, setIsPreviewing] = useState(true);
+      const [finalBonusScore, setFinalBonusScore] = useState(0);
+
+      const previewTimeoutRef = useRef(null);
+
+      const levelConfigs = [
+        { level: 1, rows: 2, cols: 2, numPairs: 2 },
+        { level: 2, rows: 2, cols: 3, numPairs: 3 },
+        { level: 3, rows: 2, cols: 4, numPairs: 4 },
+        { level: 4, rows: 3, cols: 4, numPairs: 6 },
+        { level: 5, rows: 4, cols: 4, numPairs: 8 },
+      ];
+
+      const animalPool = [
+        { emoji: '🦁', name: '사자', bgColor: 'bg-[#fef3c7]' },
+        { emoji: '🐘', name: '코끼리', bgColor: 'bg-[#e0f2fe]' },
+        { emoji: '🦒', name: '기린', bgColor: 'bg-[#fef9c3]' },
+        { emoji: '🐑', name: '양', bgColor: 'bg-[#f3f4f6]' },
+        { emoji: '🦌', name: '사슴', bgColor: 'bg-[#ffedd5]' },
+        { emoji: '🐇', name: '토끼', bgColor: 'bg-[#fce7f3]' },
+        { emoji: '🐻', name: '곰', bgColor: 'bg-[#efebeb]' },
+        { emoji: '🦊', name: '여우', bgColor: 'bg-[#fee2e2]' },
+      ];
+
+      const initLevel = (levelNum) => {
+        const config = levelConfigs[levelNum - 1];
+        const levelAnimals = animalPool.slice(0, config.numPairs);
+        let deck = [];
+        levelAnimals.forEach(animal => {
+          // Initialize with isFlipped: true so cards are shown face up during preview!
+          deck.push({ ...animal, id: `${animal.name}-1`, isFlipped: true, isMatched: false });
+          deck.push({ ...animal, id: `${animal.name}-2`, isFlipped: true, isMatched: false });
+        });
+        // Shuffle
+        deck.sort(() => Math.random() - 0.5);
+        setCards(deck);
+        setSelectedCards([]);
+        setMatchedText('');
+        setShowLevelClearedPopup(false);
+
+        // Preview mode active
+        setIsPreviewing(true);
+        if (previewTimeoutRef.current) clearTimeout(previewTimeoutRef.current);
+        previewTimeoutRef.current = setTimeout(() => {
+          setCards(prev => prev.map(c => ({ ...c, isFlipped: false })));
+          setIsPreviewing(false);
+        }, 1800);
+      };
+
+      useEffect(() => {
+        initLevel(currentLevel);
+        return () => {
+          if (previewTimeoutRef.current) clearTimeout(previewTimeoutRef.current);
+        };
+      }, [currentLevel]);
+
+      const handleCardClick = (idx) => {
+        if (selectedCards.length >= 2 || isPreviewing || clicksLeft <= 0 || isGameOver) return;
+        const clickedCard = cards[idx];
+        if (clickedCard.isFlipped || clickedCard.isMatched) return;
+
+        synth.playClick();
+
+        // Decrement clicks
+        const nextClicksLeft = clicksLeft - 1;
+        setClicksLeft(nextClicksLeft);
+
+        const newCards = [...cards];
+        newCards[idx].isFlipped = true;
+        setCards(newCards);
+
+        const newSelected = [...selectedCards, idx];
+        setSelectedCards(newSelected);
+
+        if (newSelected.length === 2) {
+          const firstIdx = newSelected[0];
+          const secondIdx = newSelected[1];
+          const firstCard = cards[firstIdx];
+          const secondCard = cards[secondIdx];
+
+          if (firstCard.emoji === secondCard.emoji) {
+            // Match!
+            setTimeout(() => {
+              synth.playSuccess();
+              setMatchedText(`${firstCard.name}을(를) 찾았어요!`);
+
+              const matchedCards = newCards.map((c, i) => {
+                if (i === firstIdx || i === secondIdx) {
+                  return { ...c, isMatched: true };
+                }
+                return c;
+              });
+              setCards(matchedCards);
+              setSelectedCards([]);
+
+              setTimeout(() => {
+                setMatchedText('');
+              }, 1200);
+
+              const allMatched = matchedCards.every(c => c.isMatched);
+              if (allMatched) {
+                setTimeout(() => {
+                  if (currentLevel === 5) {
+                    // Calculate touch-saving bonus: max 65 bonus points
+                    const clicksUsed = 100 - nextClicksLeft;
+                    const bonus = Math.max(0, Math.round((100 - clicksUsed) * 0.65));
+                    setFinalBonusScore(bonus);
+                    setShowFinalScriptureCard(true);
+                    synth.playVic();
+                  } else {
+                    setShowLevelClearedPopup(true);
+                    synth.playSuccess();
+                    confetti({
+                      particleCount: 50,
+                      spread: 60,
+                      origin: { y: 0.7 }
+                    });
+                  }
+                }, 600);
+              } else {
+                // Not all matched, check if clicks are exhausted
+                if (nextClicksLeft <= 0) {
+                  setTimeout(() => {
+                    setIsGameOver(true);
+                    synth.playBuzz();
+                  }, 800);
+                }
+              }
+            }, 400);
+          } else {
+            // Fail!
+            setTimeout(() => {
+              synth.playBuzz();
+              const revertedCards = [...newCards];
+              revertedCards[firstIdx].isFlipped = false;
+              revertedCards[secondIdx].isFlipped = false;
+              setCards(revertedCards);
+              setSelectedCards([]);
+
+              // Check if clicks are exhausted after failing to match
+              if (nextClicksLeft <= 0) {
+                setIsGameOver(true);
+                synth.playBuzz();
+              }
+            }, 1000);
+          }
+        }
+      };
+
+      const handleHintClick = () => {
+        if (coins < 5 || isPreviewing || isGameOver) return;
+        synth.playConsume();
+        onSpendCoins(5);
+
+        const faceUpState = cards.map(c => ({ ...c, isFlipped: true }));
+        setCards(faceUpState);
+
+        setTimeout(() => {
+          setCards(prev => prev.map(c => {
+            if (c.isMatched) return c;
+            return { ...c, isFlipped: false };
+          }));
+        }, 1200);
+      };
+
+      const handleNextLevel = () => {
+        synth.playClick();
+        setCurrentLevel(prev => prev + 1);
+      };
+
+      const levelConfig = levelConfigs[currentLevel - 1];
+      const gridColsClass = levelConfig.cols === 2 ? 'grid-cols-2' : levelConfig.cols === 3 ? 'grid-cols-3' : 'grid-cols-4';
+
+      return (
+        <div className="flex-1 flex flex-col bg-[#160f0a] relative select-none overflow-hidden">
+          {/* Card Game Canvas Area */}
+          <div className="flex-1 p-4 flex flex-col justify-between items-center relative z-10">
+            {/* Top Level indicator bar */}
+            <div className="w-full flex justify-between items-center bg-[#2d1e11]/60 px-3 py-1.5 rounded-xl border border-layton-gold/20 mb-3 text-layton-amber text-xs font-layton-myeongjo">
+              <span className="flex items-center gap-1">🦁 Level {currentLevel}/5</span>
+              <span className={`font-extrabold px-2.5 py-0.5 rounded-full ${clicksLeft <= 15 ? 'bg-red-600/30 text-red-300 animate-pulse' : 'bg-amber-500/20 text-yellow-300'}`}>
+                🎯 남은 터치: {clicksLeft}회
+              </span>
+            </div>
+
+            {/* Grid Container */}
+            <div className="flex-1 w-full flex items-center justify-center">
+              <div className={`grid ${gridColsClass} gap-3 max-w-[280px] w-full aspect-square`}>
+                {cards.map((card, idx) => {
+                  if (card.isMatched) {
+                    return <div key={card.id} className="opacity-0 pointer-events-none w-full h-full" />;
+                  }
+
+                  return (
+                    <div
+                      key={card.id}
+                      onClick={() => handleCardClick(idx)}
+                      className="w-full h-full cursor-pointer relative"
+                    >
+                      {card.isFlipped ? (
+                        <div className={`w-full h-full ${card.bgColor} border-4 border-[#8b5a2b] rounded-2xl flex flex-col items-center justify-center relative shadow-md p-1 scale-in`}>
+                          <span className="text-3xl filter drop-shadow-sm">{card.emoji}</span>
+                          <span className="text-[10px] font-black text-[#5c4033] font-layton-myeongjo mt-1">{card.name}</span>
+                        </div>
+                      ) : (
+                        <div className="w-full h-full bg-[#f4ebd0] border-4 border-[#8b5a2b] rounded-2xl flex items-center justify-center relative overflow-hidden shadow-md active:scale-95 transition-transform">
+                          <div className="absolute inset-1.5 border border-[#8b5a2b]/30 rounded-xl flex items-center justify-center">
+                            <span className="text-2xl opacity-40 select-none">🌿</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Floating Pair Match Notification Banner */}
+            {matchedText && (
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-[#36200c]/95 border-2 border-layton-gold text-[#fff5db] font-layton-myeongjo font-bold px-4 py-2.5 rounded-xl z-20 shadow-2xl scale-in-out whitespace-nowrap">
+                ✨ {matchedText}
+              </div>
+            )}
+
+            {/* Memory Preview Banner Overlay */}
+            {isPreviewing && (
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-[#36200c]/90 border-2 border-layton-gold text-[#fff5db] font-layton-myeongjo font-bold px-4 py-2.5 rounded-xl z-20 shadow-2xl scale-in-out animate-pulse select-none pointer-events-none">
+                👀 카드를 기억하세요!
+              </div>
+            )}
+
+            {/* Bottom Help/Hint HUD Bar */}
+            <div className="w-full mt-3 flex justify-between items-center">
+              <button
+                onClick={handleHintClick}
+                disabled={coins < 5 || isPreviewing}
+                className={`bg-black/60 border border-stone-800 text-[#e7b85e] hover:text-yellow-300 text-[10px] font-layton-myeongjo font-bold px-3 py-1.5 rounded-full flex items-center gap-0.5 ${
+                  (coins < 5 || isPreviewing) ? 'opacity-40 cursor-not-allowed' : 'active:scale-95'
+                }`}
+              >
+                💡 힌트 (5🪙)
+              </button>
+              <span className="text-[9px] text-stone-400 font-layton-myeongjo">
+                * 뒤집어서 같은 동물 한 쌍을 찾으세요
+              </span>
+            </div>
+          </div>
+
+          {/* Level Cleared Popup Modal */}
+          {showLevelClearedPopup && (
+            <div className="absolute inset-0 bg-black/75 z-40 flex items-center justify-center p-4">
+              <div className="bg-[#fdfaf2] border-4 border-[#8b5a2b] p-5 rounded-2xl shadow-2xl max-w-[260px] w-full text-center scale-in font-layton-myeongjo">
+                <span className="text-4xl block mb-2 filter drop-shadow">🎉</span>
+                <h3 className="font-black text-sm text-layton-amber mb-1.5">Level {currentLevel} 성공!</h3>
+                <p className="text-[10px] text-layton-dark leading-relaxed mb-4">
+                  에덴동산의 동물 짝을 멋지게 찾아냈습니다!<br />다음 단계는 더 많은 동물들이 기다립니다.
+                </p>
+                <button
+                  onClick={handleNextLevel}
+                  className="w-full py-2 bg-gradient-to-b from-[#e7b85e] to-[#ab7418] hover:from-[#f7cb75] hover:to-[#be8420] text-[#2c1a0c] font-black text-xs rounded-xl border-2 border-[#ffe8b5] shadow"
+                >
+                  다음 단계 도전 ➡️
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Game Over Modal */}
+          {isGameOver && (
+            <div className="absolute inset-0 bg-black/85 z-40 flex items-center justify-center p-4">
+              <div className="bg-[#fdfaf2] border-4 border-red-800 p-5 rounded-2xl shadow-2xl max-w-[260px] w-full text-center scale-in font-layton-myeongjo">
+                <span className="text-4xl block mb-2 filter drop-shadow">🥀</span>
+                <h3 className="font-black text-sm text-red-800 mb-1.5">게임 오버!</h3>
+                <p className="text-[10px] text-layton-dark leading-relaxed mb-4">
+                  터치 기회를 모두 소진했습니다!<br />처음부터 다시 도전하여 동물의 짝을 찾아주세요.
+                </p>
+                <button
+                  onClick={() => {
+                    synth.playClick();
+                    setIsGameOver(false);
+                    setClicksLeft(100);
+                    setCurrentLevel(1);
+                    initLevel(1);
+                  }}
+                  className="w-full py-2 bg-gradient-to-b from-red-600 to-red-800 hover:from-red-500 hover:to-red-700 text-white font-black text-xs rounded-xl border-2 border-red-400 shadow active:scale-95 transition-transform"
+                >
+                  다시 시작하기 🔄
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Final Level 5 Clear - peaceful Eden & scripture card */}
+          {showFinalScriptureCard && (
+            <div className="absolute inset-0 bg-[#e0f2fe] flex flex-col justify-between overflow-hidden p-6 z-30 fade-in select-none">
+              {/* Soft pastel sun and clouds */}
+              <div className="absolute top-12 left-1/2 -translate-x-1/2 w-48 h-48 bg-gradient-to-tr from-[#fef08a]/20 to-[#fef08a]/40 rounded-full blur-2xl pointer-events-none" />
+              <div className="absolute top-8 left-10 w-24 h-8 bg-white/40 rounded-full blur-[2px] animate-[pulse_4s_infinite]" />
+              <div className="absolute top-16 right-12 w-32 h-10 bg-white/30 rounded-full blur-[1px] animate-[pulse_6s_infinite]" />
+
+              {/* Rolling hills of Eden landscape background */}
+              <div className="absolute bottom-0 inset-x-0 h-48 bg-[#bbf7d0]/85 rounded-t-[100px] pointer-events-none" />
+              <div className="absolute bottom-0 inset-x-0 h-36 bg-[#86efac]/90 rounded-t-[120px] pointer-events-none" />
+              <div className="absolute bottom-0 inset-x-0 h-24 bg-[#4ade80] rounded-t-[150px] pointer-events-none" />
+
+              {/* Eden creatures representation */}
+              <div className="absolute bottom-16 left-8 text-3xl animate-bounce">🦁</div>
+              <div className="absolute bottom-8 right-10 text-4xl">🐘</div>
+              <div className="absolute bottom-20 right-28 text-3xl animate-pulse">🦒</div>
+              <div className="absolute bottom-6 left-28 text-2xl">🐑</div>
+              <div className="absolute bottom-24 left-1/2 -translate-x-1/2 text-4xl animate-pulse">🌳</div>
+
+              {/* Framing borders */}
+              <div className="absolute inset-4 border-2 border-layton-gold/25 rounded-xl pointer-events-none"></div>
+
+              {/* Centered holy Scripture card */}
+              <div className="my-auto mx-auto max-w-[280px] w-full bg-[#fdfaf2] border-4 border-[#8b5a2b] p-5 rounded-2xl shadow-[0_15px_30px_rgba(0,0,0,0.35)] z-10 flex flex-col items-center text-center scale-in font-layton-myeongjo">
+                <span className="text-3xl block mb-2 filter drop-shadow">📖</span>
+                <h3 className="font-black text-xs text-layton-amber tracking-wider border-b border-layton-brown/20 pb-1.5 w-full uppercase">
+                  에덴동산의 평화
+                </h3>
+                
+                <p className="text-[11px] text-[#4a2e13] font-bold leading-relaxed my-4 break-keep">
+                  "아담이 모든 가축과 공중의 새와 들의 모든 짐승에게 이름을 주니라 (창세기 2:20)"
+                </p>
+
+                {/* Bonus Score Banner */}
+                <div className="w-full bg-gradient-to-r from-emerald-900/60 to-emerald-800/40 border border-emerald-500/40 rounded-xl p-2.5 mb-3 flex flex-col items-center">
+                  <div className="text-[10px] text-emerald-300 font-bold font-layton-myeongjo">
+                    🏆 획득 점수
+                  </div>
+                  <div className="flex items-baseline gap-2 mt-0.5">
+                    <span className="text-yellow-200 font-black text-sm font-layton-myeongjo">+35P</span>
+                    {finalBonusScore > 0 && (
+                      <span className="text-emerald-300 font-black text-sm font-layton-myeongjo">+{finalBonusScore}P 보너스!</span>
+                    )}
+                  </div>
+                  <div className="text-[9px] text-layton-cream/50 font-layton-myeongjo mt-0.5">
+                    남은 터치 {clicksLeft}회 × 0.65 = 절약 보너스
+                  </div>
+                </div>
+
+                <div className="w-full bg-[#f4edd4] border border-[#d2b48c] p-2.5 rounded-xl text-left text-[9px] text-[#5c4033] leading-relaxed break-keep mb-4">
+                  💡 <strong>메시지:</strong> 아담이 동물의 이름을 지어주며 하나님이 만드신 세상을 사랑과 배려로 돌보았듯, 짝을 맞추며 생명을 존중하는 예쁜 마음을 키웠어요!
+                </div>
+
+                <button
+                  onClick={() => {
+                    onSolved('puzzle-002', finalBonusScore);
+                  }}
+                  className="w-full py-2 bg-gradient-to-b from-[#e7b85e] to-[#ab7418] hover:from-[#f7cb75] hover:to-[#be8420] text-[#2c1a0c] font-black text-xs rounded-xl border-2 border-[#ffe8b5] shadow-md hover:scale-[1.02] active:scale-95 transition-all duration-200"
+                >
+                  다음 스테이지로 ➡️
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       );
     }
@@ -1266,7 +2510,7 @@
         { id: 'puzzle-001', x: 20, y: 18, emoji: '💡', name: '스테이지 1: 빛과 어둠의 분리', picarats: 30 },
         { id: 'puzzle-002', x: 70, y: 32, emoji: '🦁', name: '스테이지 2: 에덴동산의 동물들', picarats: 35 },
         { id: 'puzzle-003', x: 20, y: 46, emoji: '🍎', name: '스테이지 3: 선악과와 인간의 타락', picarats: 40 },
-        { id: 'puzzle-004', x: 82, y: 48, emoji: '🚢', name: '스테이지 4: 노아의 방주와 홍수', picarats: 45 },
+        { id: 'puzzle-004', x: 82, y: 48, emoji: '🚢', name: '스테이지 4: 방주의 잃어버린 짝', picarats: 45 },
         { id: 'puzzle-005', x: 43, y: 62, emoji: '🧱', name: '스테이지 5: 바벨탑과 흩어진 인류', picarats: 50 },
         { id: 'puzzle-006', x: 21, y: 74, emoji: '⛺', name: '스테이지 6: 아브라함과 믿음의 제단', picarats: 55 },
         { id: 'puzzle-007', x: 79, y: 82, emoji: '🐏', name: '스테이지 7: 이삭과 야곱', picarats: 60 },
@@ -1450,10 +2694,13 @@
                   {completedPuzzles.includes(activeBubble.id) && <span className="text-red-700 font-extrabold ml-2 font-serif">★ SOLVED ★</span>}
                 </p>
 
-                {activeBubble.locked && !completedPuzzles.includes(activeBubble.id) ? (
-                  <div className="w-full text-center py-2 bg-stone-200 border border-stone-300 text-stone-500 font-black text-xs rounded-xl font-layton-myeongjo">
-                    🔒 아직은 진입할 수 없습니다! (준비중)
-                  </div>
+                {(() => {
+                  const bubbleIndex = nodes.findIndex(n => n.id === activeBubble.id);
+                  const isDynamicallyLocked = bubbleIndex > 0 && !completedPuzzles.includes(nodes[bubbleIndex - 1].id);
+                  return isDynamicallyLocked ? (
+                    <div className="w-full text-center py-2 bg-stone-200 border border-stone-300 text-stone-500 font-black text-xs rounded-xl font-layton-myeongjo">
+                      🔒 이전 스테이지를 먼저 클리어하세요!
+                    </div>
                 ) : (
                   <div className="flex gap-2 w-full">
                     <button
@@ -1469,7 +2716,8 @@
                       도전하기! 🎯
                     </button>
                   </div>
-                )}
+                 );
+                })()}
               </div>
             )}
 
@@ -1534,6 +2782,30 @@
       const [isSolved, setIsSolved] = useState(false);
       const [solvedPuzzleId, setSolvedPuzzleId] = useState(null);
       const [solvedAnimation, setSolvedAnimation] = useState(false);
+      const [lastEarnedScore, setLastEarnedScore] = useState(0);
+
+      const [totalScore, setTotalScore] = useState(() => {
+        try {
+          const saved = localStorage.getItem('bible_quiz_score');
+          if (saved !== null) {
+            const parsed = parseInt(saved, 10);
+            if (!isNaN(parsed)) return parsed;
+          }
+        } catch (e) {}
+        return 0;
+      });
+
+      // Rankings: array of { name, score, date }
+      const [rankings, setRankings] = useState(() => {
+        try {
+          const saved = localStorage.getItem('bible_quiz_rankings');
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed)) return parsed;
+          }
+        } catch (e) {}
+        return [];
+      });
 
       const [isBgmPlaying, setIsBgmPlaying] = useState(true);
       const titleBgmRef = useRef(null);
@@ -1597,8 +2869,8 @@
       const puzzlesList = [
         { id: 'puzzle-001', num: '001', name: '스테이지 1: 빛과 어둠의 분리', picarats: 30, locked: false },
         { id: 'puzzle-002', num: '002', name: '스테이지 2: 에덴동산의 동물들', picarats: 35, locked: false },
-        { id: 'puzzle-003', num: '003', name: '스테이지 3: 선악과와 인간의 타락', picarats: 40, locked: true },
-        { id: 'puzzle-004', num: '004', name: '스테이지 4: 노아의 방주와 홍수', picarats: 45, locked: true },
+        { id: 'puzzle-003', num: '003', name: '스테이지 3: 아담의 바구니', picarats: 40, locked: false },
+        { id: 'puzzle-004', num: '004', name: '스테이지 4: 방주의 잃어버린 짝', picarats: 45, locked: true },
         { id: 'puzzle-005', num: '005', name: '스테이지 5: 바벨탑과 흩어진 인류', picarats: 50, locked: true },
         { id: 'puzzle-006', num: '006', name: '스테이지 6: 아브라함과 믿음의 제단', picarats: 55, locked: true },
         { id: 'puzzle-007', num: '007', name: '스테이지 7: 이삭과 야곱', picarats: 60, locked: true },
@@ -1621,7 +2893,7 @@
         localStorage.setItem('bible_quiz_coins', nextCoins.toString());
       };
 
-      const handlePuzzleSolved = (puzzleId) => {
+      const handlePuzzleSolved = (puzzleId, bonusScore = 0) => {
         synth.playSuccess();
         setSolvedPuzzleId(puzzleId);
         setIsSolved(true);
@@ -1633,12 +2905,43 @@
           origin: { y: 0.6 }
         });
 
+        // Calculate earned score
+        const puzzle = puzzlesList.find(p => p.id === puzzleId);
+        const baseScore = puzzle ? puzzle.picarats : 30;
+        const earnedScore = baseScore + bonusScore;
+        setLastEarnedScore(earnedScore);
+
         if (!completedPuzzles.includes(puzzleId)) {
-          const updated = [...completedPuzzles, puzzleId];
-          setCompletedPuzzles(updated);
-          localStorage.setItem('bible_quiz_completed', JSON.stringify(updated));
+          // 처음 클리어할 때만 점수 적립
+          const nextScore = totalScore + earnedScore;
+          setTotalScore(nextScore);
+          localStorage.setItem('bible_quiz_score', nextScore.toString());
+
+          const updatedCompleted = [...completedPuzzles, puzzleId];
+          setCompletedPuzzles(updatedCompleted);
+          localStorage.setItem('bible_quiz_completed', JSON.stringify(updatedCompleted));
           handleAddCoins(20); // Earn 20 coins on first clear!
+
+          // 랭킹: 같은 이름 플레이어 항목을 업데이트 (1인 1항목)
+          const myEntry = {
+            name: profileName,
+            gender: profileGender,
+            score: nextScore,
+            cleared: updatedCompleted.length,
+            date: new Date().toLocaleDateString('ko-KR'),
+          };
+          const otherEntries = rankings.filter(r => r.name !== profileName);
+          const updatedRankings = [...otherEntries, myEntry]
+            .sort((a, b) => b.score - a.score)
+            .slice(0, 10);
+          setRankings(updatedRankings);
+          localStorage.setItem('bible_quiz_rankings', JSON.stringify(updatedRankings));
         }
+      };
+
+      const handleResetScore = () => {
+        setTotalScore(0);
+        localStorage.setItem('bible_quiz_score', '0');
       };
 
       const handleResetAllProgress = () => {
@@ -1647,8 +2950,12 @@
           localStorage.removeItem('bible_quiz_coins');
           localStorage.removeItem('bible_quiz_profile_name');
           localStorage.removeItem('bible_quiz_profile_gender');
+          localStorage.removeItem('bible_quiz_score');
+          localStorage.removeItem('bible_quiz_rankings');
           setCompletedPuzzles([]);
           setCoins(30);
+          setTotalScore(0);
+          setRankings([]);
           setProfileName('');
           setProfileGender('');
           setIsSolved(false);
@@ -1868,8 +3175,9 @@
                     {profileGender === 'girl' ? '👧' : '👦'} {profileName} 모험가
                   </h3>
                 </div>
-                <div className="text-right text-[9px] text-yellow-300 font-bold font-layton-myeongjo">
-                  🪙 {coins}개 | 해결: {completedPuzzles.length}/{puzzlesList.length}
+                <div className="text-right font-layton-myeongjo">
+                  <div className="text-[9px] text-yellow-300 font-bold">🪙 {coins}개</div>
+                  <div className="text-[9px] text-amber-400 font-bold">⭐ {totalScore}점</div>
                 </div>
               </div>
 
@@ -1889,14 +3197,22 @@
                 >
                   📖 성경 탐험 시작하기
                 </button>
- 
-                <button
-                  onClick={() => navigateTo('list')}
-                  className="w-full py-2.5 bg-gradient-to-b from-[#5c4a3c] to-[#3a2c20] hover:from-[#6d5747] hover:to-[#453426] text-layton-cream font-bold font-layton-myeongjo text-[12px] rounded-xl border border-layton-gold/40 shadow-[0_4px_8px_rgba(0,0,0,0.5)] hover:scale-[1.02] active:scale-95 transition-all duration-200 flex justify-center items-center gap-2"
-                >
-                  🗺️ 성경 지도 보기
-                </button>
- 
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => navigateTo('list')}
+                    className="flex-1 py-2.5 bg-gradient-to-b from-[#5c4a3c] to-[#3a2c20] hover:from-[#6d5747] hover:to-[#453426] text-layton-cream font-bold font-layton-myeongjo text-[11px] rounded-xl border border-layton-gold/40 shadow-[0_4px_8px_rgba(0,0,0,0.5)] hover:scale-[1.02] active:scale-95 transition-all duration-200 flex justify-center items-center gap-1"
+                  >
+                    🗺️ 성경 지도
+                  </button>
+                  <button
+                    onClick={() => navigateTo('ranking')}
+                    className="flex-1 py-2.5 bg-gradient-to-b from-[#4a3a6e] to-[#2d2248] hover:from-[#5a4a7e] hover:to-[#3d3258] text-yellow-200 font-bold font-layton-myeongjo text-[11px] rounded-xl border border-purple-400/40 shadow-[0_4px_8px_rgba(0,0,0,0.5)] hover:scale-[1.02] active:scale-95 transition-all duration-200 flex justify-center items-center gap-1"
+                  >
+                    🏆 랭킹
+                  </button>
+                </div>
+
                 <div className="flex justify-between items-center px-1 mt-1 text-white font-layton-myeongjo drop-shadow-[0_2px_4px_rgba(0,0,0,1)]">
                   <button
                     onClick={() => setIsBgmPlaying(prev => !prev)}
@@ -1915,7 +3231,82 @@
               </div>
             </div>
           )}
-          
+
+          {/* SCREEN: RANKING LEADERBOARD */}
+          {screen === 'ranking' && (
+            <div className="flex-1 flex flex-col z-10 fade-in bg-[#0f0a06] relative overflow-hidden">
+              {/* Decorative gold border */}
+              <div className="absolute inset-4 border border-layton-gold/20 rounded-2xl pointer-events-none z-0" />
+
+              {/* Header */}
+              <div className="bg-[#36200c] border-b-2 border-layton-gold px-4 py-3 flex items-center justify-between z-10">
+                <button
+                  onClick={() => navigateTo('menu')}
+                  className="text-[9px] text-layton-amber font-bold font-layton-myeongjo hover:text-yellow-300"
+                >
+                  ◀ 메인 메뉴
+                </button>
+                <h2 className="font-layton-myeongjo font-black text-layton-amber text-sm tracking-wider">🏆 명예의 전당</h2>
+                <div className="text-[9px] text-yellow-300 font-layton-myeongjo font-bold">⭐ 내 점수: {totalScore}</div>
+              </div>
+
+              {/* Score legend */}
+              <div className="mx-4 mt-3 mb-2 bg-[#1e140a]/80 border border-layton-gold/20 rounded-xl p-3 z-10">
+                <h3 className="font-layton-myeongjo font-bold text-[10px] text-layton-amber mb-2">📋 점수 획득 방법</h3>
+                <div className="grid grid-cols-2 gap-1.5 text-[9px] text-layton-cream/80 font-layton-myeongjo">
+                  <div className="flex items-center gap-1">💡 스테이지 1 클리어<span className="ml-auto text-yellow-300 font-bold">+30P</span></div>
+                  <div className="flex items-center gap-1">🦁 스테이지 2 클리어<span className="ml-auto text-yellow-300 font-bold">+35P</span></div>
+                  <div className="flex items-center gap-1 col-span-2 border-t border-layton-gold/15 pt-1.5 mt-0.5">🎯 터치 절약 보너스 (스테이지 2)<span className="ml-auto text-emerald-300 font-bold">최대+65P</span></div>
+                  <div className="flex items-center gap-1 col-span-2">⚡ 속도 보너스 (스테이지 1)<span className="ml-auto text-sky-300 font-bold">최대+20P</span></div>
+                </div>
+              </div>
+
+              {/* Ranking List */}
+              <div className="flex-1 overflow-y-auto px-4 pb-4 z-10">
+                {rankings.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full gap-3 opacity-60">
+                    <span className="text-5xl">🏅</span>
+                    <p className="font-layton-myeongjo text-layton-cream/60 text-xs text-center break-keep">
+                      아직 기록이 없어요.<br />스테이지를 클리어해서 첫 번째 탐험가가 되어보세요!
+                    </p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    {rankings.map((entry, idx) => {
+                      const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}.`;
+                      const isMe = entry.name === profileName;
+                      return (
+                        <div
+                          key={idx}
+                          className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border ${
+                            isMe
+                              ? 'bg-amber-500/15 border-layton-gold/60'
+                              : 'bg-[#1e140a]/60 border-layton-gold/15'
+                          }`}
+                        >
+                          <span className="text-lg w-7 text-center flex-none">{medal}</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-layton-myeongjo font-bold text-[11px] text-layton-cream truncate">
+                              {entry.gender === 'girl' ? '👧' : '👦'} {entry.name}
+                              {isMe && <span className="ml-1 text-[9px] text-amber-400">(나)</span>}
+                            </div>
+                            <div className="text-[8px] text-layton-cream/50 font-layton-myeongjo truncate">
+                              📖 {entry.cleared || 1}스테이지 클리어 · {entry.date}
+                            </div>
+                          </div>
+                          <div className="text-right flex-none">
+                            <div className="font-layton-myeongjo font-black text-sm text-yellow-300">⭐ {entry.score}</div>
+                            <div className="text-[8px] text-layton-cream/40">PICARATS</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
            {/* SCREEN 2: PUZZLE EXPLORE MAP */}
           {screen === 'list' && (
             <PuzzleMap 
@@ -1947,8 +3338,8 @@
                   ◀ 도감목록
                 </button>
                 <div className="text-center mx-1 flex-1 min-w-0">
-                  <h2 className="text-layton-cream font-layton-myeongjo font-bold text-[9px] tracking-tight truncate">
-                    {activePuzzleId === 'puzzle-001' ? '1스테이지: 빛과 어둠의 분리' : '오병이어: 나누면 커지는 기적'}
+                  <h2 className="text-layton-cream font-layton-myeongjo font-bold text-[9px] tracking-tight truncate font-layton-myeongjo">
+                    {puzzlesList.find(p => p.id === activePuzzleId)?.name || '성경 탐험'}
                   </h2>
                 </div>
                 <div className="flex items-center gap-1.5 flex-none">
@@ -1967,20 +3358,40 @@
                   <span className="text-stone-600 text-[8px]">|</span>
                   <div className="flex items-center gap-0.5">
                     <span className="text-layton-amber text-[9px] font-bold">
-                      {activePuzzleId === 'puzzle-001' ? '30' : '40'}
+                      {puzzlesList.find(p => p.id === activePuzzleId)?.picarats || '30'}
                     </span>
                     <span className="text-layton-gold text-[8px] font-extrabold font-serif italic tracking-wide">P</span>
                   </div>
                 </div>
               </div>
 
-              {/* Conditional stage rendering */}
               {activePuzzleId === 'puzzle-001' ? (
                 <PuzzleNoah 
                   coins={coins}
                   onSpendCoins={handleSpendCoins}
                   onBack={() => navigateTo('list')} 
                   onSolved={handlePuzzleSolved} 
+                />
+              ) : activePuzzleId === 'puzzle-002' ? (
+                <PuzzleEdenAnimals 
+                  coins={coins}
+                  onSpendCoins={handleSpendCoins}
+                  onBack={() => navigateTo('list')} 
+                  onSolved={handlePuzzleSolved} 
+                />
+              ) : activePuzzleId === 'puzzle-003' ? (
+                <PuzzleAdamBasket
+                  coins={coins}
+                  onSpendCoins={handleSpendCoins}
+                  onBack={() => navigateTo('list')}
+                  onSolved={handlePuzzleSolved}
+                />
+              ) : activePuzzleId === 'puzzle-004' ? (
+                <PuzzleNoahDeduction
+                  coins={coins}
+                  onSpendCoins={handleSpendCoins}
+                  onBack={() => navigateTo('list')}
+                  onSolved={handlePuzzleSolved}
                 />
               ) : (
                 <PuzzleFiveLoaves 
@@ -2067,6 +3478,112 @@
                         가짜 빛들을 모두 터치하여 끈 뒤 비로소 만나게 된 참된 흑암 상태에서, 하나님께서는 비로소 진짜 생명의 빛을 선포하십니다. "빛이 있으라 하매 빛이 있었고..." 이 분리함을 통해 우리는 영적인 참 빛의 소중함을 깨닫습니다.
                       </p>
                     </div>
+                  ) : solvedPuzzleId === 'puzzle-002' ? (
+                    // Eden's Animals reflection
+                    <div>
+                      <div className="text-center border-b border-layton-brown/30 pb-2 mb-3 font-layton-myeongjo">
+                        <span className="text-[10px] text-layton-lightbrown font-bold tracking-wider uppercase">Theological Puzzle Reflection</span>
+                        <h4 className="font-layton-myeongjo font-black text-sm text-layton-brown mt-0.5">창조의 조화 : 이름을 짓고 돌보는 청지기</h4>
+                      </div>
+                      
+                      <div className="w-full flex justify-center py-2 mb-2 bg-[#fbf8ee] border border-layton-brown/10 rounded-lg">
+                        <svg width="90" height="60" viewBox="0 0 120 90" xmlns="http://www.w3.org/2000/svg">
+                          <rect width="120" height="90" fill="#ecfdf5" rx="8" />
+                          <path d="M 60,65 L 60,80" stroke="#78350f" strokeWidth="3" strokeLinecap="round" />
+                          <circle cx="60" cy="50" r="16" fill="#10b981" opacity="0.85" />
+                          <circle cx="50" cy="45" r="12" fill="#059669" opacity="0.9" />
+                          <circle cx="70" cy="48" r="12" fill="#34d399" opacity="0.9" />
+                          <circle cx="35" cy="65" r="9" fill="#fef3c7" stroke="#b45309" strokeWidth="1.5" />
+                          <circle cx="32" cy="63" r="1" fill="#000" />
+                          <circle cx="38" cy="63" r="1" fill="#000" />
+                          <path d="M 33,67 Q 35,69 37,67" stroke="#b45309" strokeWidth="1" fill="none" />
+                          <path d="M 85,30 Q 90,25 95,30 Q 100,25 105,30" stroke="#0284c7" strokeWidth="1.5" strokeLinecap="round" fill="none" />
+                        </svg>
+                      </div>
+
+                      <p className="font-layton-myeongjo text-[11px] leading-relaxed text-layton-dark font-medium text-justify break-keep mb-3">
+                        하나님께서는 창조하신 가축들과 짐승들을 아담에게 데려오사 이름을 짓게 하셨습니다. 이름을 짓는 것은 단순히 호칭을 정하는 것을 넘어, 동물을 깊이 관찰하고 사랑과 책임으로 돌보며 세상을 주님의 성지처럼 경작하는 청지기의 첫걸음이었습니다.
+                      </p>
+
+                      <blockquote className="border-l-2 border-emerald-600 pl-2 py-0.5 bg-emerald-50/50 mb-3">
+                        <p className="font-layton-myeongjo text-[11px] font-bold text-emerald-800 italic leading-relaxed break-keep">
+                          "에덴동산의 평화는 모든 창조물들이 서로 짝을 찾아 조화를 이루고, 아담이 그들에게 이름을 지어주며 사랑으로 보듬어줄 때 완성됩니다."
+                        </p>
+                      </blockquote>
+
+                      <p className="font-layton-myeongjo text-[11px] leading-relaxed text-layton-dark font-medium text-justify break-keep">
+                        우리는 동물의 짝을 맞추며, 온 세상 만물이 하나님의 질서 아래 각각 알맞은 동반자와 조화를 이루도록 설계되었음을 발견합니다. 우리의 삶에서도 주님이 주신 공동체와 주변 환경을 아름답게 돌보고 명명하는 청지기의 역할을 되새깁니다.
+                      </p>
+                    </div>
+                  ) : solvedPuzzleId === 'puzzle-003' ? (
+                    // Adam's Basket reflection
+                    <div>
+                      <div className="text-center border-b border-layton-brown/30 pb-2 mb-3 font-layton-myeongjo">
+                        <span className="text-[10px] text-layton-lightbrown font-bold tracking-wider uppercase">Theological Puzzle Reflection</span>
+                        <h4 className="font-layton-myeongjo font-black text-sm text-layton-brown mt-0.5">성령의 열매 : 유혹을 이기고 은혜를 담는 청지기</h4>
+                      </div>
+
+                      <div className="w-full flex justify-center py-2 mb-2 bg-[#e0f7e9] border border-layton-brown/10 rounded-lg">
+                        <svg width="90" height="60" viewBox="0 0 120 90" xmlns="http://www.w3.org/2000/svg">
+                          <rect width="120" height="90" fill="#e0f7e9" rx="8" />
+                          <circle cx="60" cy="32" r="18" fill="#86efac" />
+                          <circle cx="60" cy="32" r="9" fill="#fde68a" />
+                          <text x="55" y="37" fontSize="12" fill="#16a34a">♥</text>
+                          <ellipse cx="60" cy="68" rx="28" ry="12" fill="#d97706" stroke="#b45309" strokeWidth="1.5"/>
+                          <path d="M 35,60 Q 60,52 85,60" stroke="#92400e" strokeWidth="1.5" fill="none" />
+                        </svg>
+                      </div>
+
+                      <p className="font-layton-myeongjo text-[11px] leading-relaxed text-layton-dark font-medium text-justify break-keep mb-3">
+                        아담이 에덴에서 유혹의 선악과와 뱀을 마주했듯, 우리도 매일 세상의 유혹 앞에 서 있습니다. 그러나 성령의 열매를 마음에 담은 자는 더 큰 힘으로 유혹을 이기고 하나님의 은혜를 받아 내고 나누는 삶이 됩니다.
+                      </p>
+
+                      <blockquote className="border-l-2 border-green-700 pl-2 py-0.5 bg-green-50/50 mb-3">
+                        <p className="font-layton-myeongjo text-[11px] font-bold text-green-800 italic leading-relaxed break-keep">
+                          "오직 성령의 열매는 사랑과 희락과 화평과 오래 참음과 자비와 양선과 충성과 온유와 절제니 (갈라디아서 5:22-23)"
+                        </p>
+                      </blockquote>
+
+                      <p className="font-layton-myeongjo text-[11px] leading-relaxed text-layton-dark font-medium text-justify break-keep">
+                        바구니로 은혜를 받아내듯, 우리의 마음도 성령의 열매로 가득 채울 때 하나님께서 주시는 이 아름답고 빈틈없는 삶의 풍성함을 눈으로 볼 수 있게 됩니다.
+                      </p>
+                    </div>
+                  ) : solvedPuzzleId === 'puzzle-004' ? (
+                    // Noah's Ark reflection
+                    <div>
+                      <div className="text-center border-b border-layton-brown/30 pb-2 mb-3 font-layton-myeongjo">
+                        <span className="text-[10px] text-layton-lightbrown font-bold tracking-wider uppercase">Theological Puzzle Reflection</span>
+                        <h4 className="font-layton-myeongjo font-black text-sm text-layton-brown mt-0.5">방주의 언약 : 생명을 품고 살리는 공동체</h4>
+                      </div>
+
+                      <div className="w-full flex justify-center py-2 mb-2 bg-[#fdf2f8] border border-layton-brown/10 rounded-lg">
+                        <svg width="90" height="60" viewBox="0 0 120 90" xmlns="http://www.w3.org/2000/svg">
+                          <rect width="120" height="90" fill="#fdf2f8" rx="8" />
+                          <path d="M 10,75 A 50,50 0 0,1 110,75" stroke="#f43f5e" strokeWidth="4" fill="none" opacity="0.8" />
+                          <path d="M 15,75 A 45,45 0 0,1 105,75" stroke="#eab308" strokeWidth="4" fill="none" opacity="0.8" />
+                          <path d="M 20,75 A 40,40 0 0,1 100,75" stroke="#10b981" strokeWidth="4" fill="none" opacity="0.8" />
+                          <path d="M 25,75 A 35,35 0 0,1 95,75" stroke="#3b82f6" strokeWidth="4" fill="none" opacity="0.8" />
+                          <path d="M 40,65 L 80,65 L 88,52 L 32,52 Z" fill="#78350f" />
+                          <rect x="42" y="44" width="36" height="8" fill="#92400e" />
+                          <polygon points="60,34 50,44 70,44" fill="#b45309" />
+                          <text x="54" y="24" fontSize="12" fill="#ec4899">♥</text>
+                        </svg>
+                      </div>
+
+                      <p className="font-layton-myeongjo text-[11px] leading-relaxed text-layton-dark font-medium text-justify break-keep mb-3">
+                        하나님께서는 대홍수의 심판 한가운데서도 생명을 잊지 않으시고, 노아를 통해 모든 생명체를 암수 한 쌍씩 짝지어 살리셨습니다. 방주는 생명들을 단절이 아닌 조화와 동반자의 관계로 가득 채우는 은혜의 품이었습니다.
+                      </p>
+
+                      <blockquote className="border-l-2 border-pink-600 pl-2 py-0.5 bg-pink-50/50 mb-3">
+                        <p className="font-layton-myeongjo text-[11px] font-bold text-pink-800 italic leading-relaxed break-keep">
+                          "방주의 문이 열리고 무지개가 뜰 때, 우리는 하나님이 주신 모든 생명이 홀로 존재하지 않고 짝을 지어 함께 풍성한 연합을 누리도록 설계되었음을 고백합니다."
+                        </p>
+                      </blockquote>
+
+                      <p className="font-layton-myeongjo text-[11px] leading-relaxed text-layton-dark font-medium text-justify break-keep">
+                        오늘날 우리의 가정과 교회 역시 서로 다른 이들이 모여 짝을 맞추며, 영적인 무지개 약속을 함께 나누는 구원의 방주입니다. 서로의 부족함을 보완하며 약속을 신뢰하는 삶을 배웁니다.
+                      </p>
+                    </div>
                   ) : (
                     // Five Loaves and Two Fish reflection
                     <div>
@@ -2074,7 +3591,7 @@
                         <span className="text-[10px] text-layton-lightbrown font-bold tracking-wider uppercase">Theological Puzzle Reflection</span>
                         <h4 className="font-layton-myeongjo font-black text-sm text-layton-brown mt-0.5">나눔의 비결 : 쪼개어지는 축복</h4>
                       </div>
-                      
+
                       <div className="w-full flex justify-center py-2 mb-2 bg-[#f0ebd7] border border-layton-brown/10 rounded-lg">
                         <svg width="90" height="60" viewBox="0 0 120 90" xmlns="http://www.w3.org/2000/svg">
                           <ellipse cx="60" cy="55" rx="35" ry="18" fill="#d4a373" stroke="#8b5a2b" strokeWidth="2.5"/>
@@ -2087,7 +3604,7 @@
                       </div>
 
                       <p className="font-layton-myeongjo text-[11px] leading-relaxed text-layton-dark font-medium text-justify break-keep mb-3">
-                        세상의 지혜는 움켜쥐고(더하기) 곱해서 자산을 불릴 때 부요함이 찾아온다고 말합니다. 
+                        세상의 지혜는 움켜쥐고(더하기) 곱해서 자산을 불릴 때 부요함이 찾아온다고 말합니다.
                         하지만 하늘나라의 기적은 오직 우리가 가진 가장 크고 소중한 것(Lv5)을 주님의 손에 올리고, 기꺼이 쪼개고 나눌 때 일어납니다.
                       </p>
 
@@ -2098,7 +3615,7 @@
                       </blockquote>
 
                       <p className="font-layton-myeongjo text-[11px] leading-relaxed text-layton-dark font-medium text-justify break-keep">
-                        나를 쪼개어 타인을 채우는 '나눔의 신비'. 내가 작아지고 소외될 때 주님의 손을 통해 
+                        나를 쪼개어 타인을 채우는 '나눔의 신비'. 내가 작아지고 소외될 때 주님의 손을 통해
                         오히려 만물이 풍성해지는 오병이어의 반전 법칙이야말로 하나님께서 세상을 돌보시는 사랑의 원리입니다.
                       </p>
                     </div>
@@ -2107,7 +3624,7 @@
 
                 <div className="mt-4 flex flex-col gap-2">
                   <div className="bg-yellow-100 border border-yellow-300 text-yellow-800 text-[10px] text-center font-bold font-sans py-1 rounded font-layton-myeongjo">
-                    ★ PICARATS +{solvedPuzzleId === 'puzzle-001' ? '30' : '40'} ACQUIRED ★
+                    ★ PICARATS +{solvedPuzzleId === 'puzzle-001' ? '30' : solvedPuzzleId === 'puzzle-002' ? '35' : solvedPuzzleId === 'puzzle-003' ? '40' : solvedPuzzleId === 'puzzle-004' ? '45' : '40'} ACQUIRED ★
                   </div>
 
                   <button

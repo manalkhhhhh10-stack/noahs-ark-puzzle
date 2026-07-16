@@ -90,6 +90,24 @@
       background: rgba(74, 47, 19, 0.5);
     }
 
+    /* Responsive Viewport Wrapper */
+    .game-container {
+      width: 100vw;
+      height: 100dvh;
+      border: none;
+      border-radius: 0;
+    }
+    
+    @media (min-width: 480px) and (min-height: 680px) {
+      .game-container {
+        width: 360px;
+        height: 640px;
+        border: 8px solid #4a2f13; /* border-layton-brown */
+        border-radius: 1.5rem; /* rounded-3xl */
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      }
+    }
+
     /* Antique paper texture overlay */
     .paper-texture {
       background-image: radial-gradient(circle, rgba(255,255,255,0.15) 0%, rgba(240,230,200,0.15) 100%),
@@ -1625,7 +1643,7 @@
       };
 
       return (
-        <div className="relative w-[360px] h-[640px] bg-[#120d08] rounded-3xl border-8 border-layton-brown shadow-2xl overflow-hidden flex flex-col paper-texture select-none">
+        <div className="game-container relative bg-[#120d08] overflow-hidden flex flex-col paper-texture select-none">
           
           {/* Background Music Audio elements */}
           <audio ref={titleBgmRef} src="bgm.mp3" loop />

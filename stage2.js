@@ -181,7 +181,10 @@
       const gridColsClass = levelConfig.cols === 2 ? 'grid-cols-2' : levelConfig.cols === 3 ? 'grid-cols-3' : 'grid-cols-4';
 
       return (
-        <div className="flex-1 flex flex-col bg-[#160f0a] relative select-none overflow-hidden">
+        <div 
+          className="flex-1 flex flex-col bg-[#160f0a] relative select-none overflow-hidden bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: "url('2stagebg.png')" }}
+        >
           {/* Card Game Canvas Area */}
           <div className="flex-1 p-4 flex flex-col justify-between items-center relative z-10">
             {/* Top Level indicator bar */}

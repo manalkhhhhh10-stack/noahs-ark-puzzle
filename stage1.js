@@ -281,7 +281,7 @@
 
 
           {/* MAIN GAME CONTAINER AREA */}
-          <div className="flex-1 relative overflow-hidden bg-black w-full h-full bg-cover bg-center bg-no-repeat" style={{ backgroundImage: "url('1gamebg.png')" }}>
+          <div className="flex-1 relative overflow-hidden bg-black w-full h-full bg-cover bg-center bg-no-repeat" style={{ backgroundImage: "url('1stagebg.png')" }}>
 
             {/* PHASE 1: GAME START INTRO CARD */}
             {!gameStarted && (

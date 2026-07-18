@@ -15,15 +15,23 @@
 
     // PUZZLE 1 COMPONENT: NOAH'S ARK
     function PuzzleNoah({ coins, onSpendCoins, onBack, onSolved }) {
+      const [currentLevel, setCurrentLevel] = useState(1);
+      const [showLevelClear, setShowLevelClear] = useState(false);
       const [gameStarted, setGameStarted] = useState(false);
       const [lights, setLights] = useState([]);
       const [isCompleted, setIsCompleted] = useState(false);
       const [showHint, setShowHint] = useState(false);
       const [hintUnlocked, setHintUnlocked] = useState(false);
       const [showUnlockConfirm, setShowUnlockConfirm] = useState(false);
-      const [timeLeft, setTimeLeft] = useState(15);
+      const [timeLeft, setTimeLeft] = useState(20);
       const [isFailed, setIsFailed] = useState(false);
       const [isSlowed, setIsSlowed] = useState(false);
+
+      const LEVEL_CONFIGS = [
+        { level: 1, lightCount: 12, fastCount: 0, timeLimit: 20 },
+        { level: 2, lightCount: 18, fastCount: 2, timeLimit: 15 },
+        { level: 3, lightCount: 25, fastCount: 4, timeLimit: 12 },
+      ];
 
       // Spend 10 coins to slow down temptations for 3s
       const handleSlowItemClick = () => {
@@ -36,10 +44,11 @@
         }, 3000);
       };
 
-      // Start the game and initialize 20 lights
+      // Start the game and initialize lights based on level
       const handleStartGame = () => {
         synth.playClick();
         
+        const cfg = LEVEL_CONFIGS[currentLevel - 1];
         const sizeClasses = ['text-lg', 'text-xl', 'text-2xl', 'text-3xl'];
         const emojis = ['🧸', '🎮', '💵', '💎', '📱', '📺', '🍭', '🍩', '🍕', '🪙'];
         const glowColors = [
@@ -50,7 +59,7 @@
           'rgba(34, 197, 94, 0.4)'   // Green
         ];
 
-        const initialLights = Array.from({ length: 20 }, (_, i) => {
+        const initialLights = Array.from({ length: cfg.lightCount }, (_, i) => {
           const sizeClass = sizeClasses[Math.floor(Math.random() * sizeClasses.length)];
           const emoji = emojis[Math.floor(Math.random() * emojis.length)];
           const x = Math.random() * 80 + 10; // 10% to 90%
@@ -58,7 +67,7 @@
           
           let dx = (Math.random() - 0.5) * 1.8;
           let dy = (Math.random() - 0.5) * 1.8;
-          const isSuperFast = i < 2; // Make the first 2 items super fast!
+          const isSuperFast = i < cfg.fastCount;
           if (isSuperFast) {
             const angle = Math.random() * Math.PI * 2;
             const speed = 4.2; // Over double the speed (4.2px per frame)
@@ -87,7 +96,8 @@
         setLights(initialLights);
         setGameStarted(true);
         setIsCompleted(false);
-        setTimeLeft(15);
+        setShowLevelClear(false);
+        setTimeLeft(cfg.timeLimit);
         setIsFailed(false);
         setIsSlowed(false);
       };
@@ -162,12 +172,65 @@
             const next = prev.filter(l => l.id !== id);
             // Check if this was the last light
             if (next.length === 0) {
-              setIsCompleted(true);
-              synth.playVic();
+              if (currentLevel < 3) {
+                setShowLevelClear(true);
+                synth.playSuccess();
+              } else {
+                setIsCompleted(true);
+                synth.playVic();
+              }
             }
             return next;
           });
         }, 250);
+      };
+
+      const handleNextLevel = () => {
+        synth.playClick();
+        setCurrentLevel(prev => {
+          const nextLvl = prev + 1;
+          const cfg = LEVEL_CONFIGS[nextLvl - 1];
+          
+          const sizeClasses = ['text-lg', 'text-xl', 'text-2xl', 'text-3xl'];
+          const emojis = ['🧸', '🎮', '💵', '💎', '📱', '📺', '🍭', '🍩', '🍕', '🪙'];
+          const glowColors = [
+            'rgba(251, 191, 36, 0.4)',
+            'rgba(244, 63, 94, 0.4)',
+            'rgba(14, 165, 233, 0.4)',
+            'rgba(168, 85, 247, 0.4)',
+            'rgba(34, 197, 94, 0.4)'
+          ];
+          const initialLights = Array.from({ length: cfg.lightCount }, (_, i) => {
+            const sizeClass = sizeClasses[Math.floor(Math.random() * sizeClasses.length)];
+            const emoji = emojis[Math.floor(Math.random() * emojis.length)];
+            const x = Math.random() * 80 + 10;
+            const y = Math.random() * 70 + 15;
+            
+            let dx = (Math.random() - 0.5) * 1.8;
+            let dy = (Math.random() - 0.5) * 1.8;
+            const isSuperFast = i < cfg.fastCount;
+            if (isSuperFast) {
+              const angle = Math.random() * Math.PI * 2;
+              const speed = 4.2;
+              dx = Math.cos(angle) * speed;
+              dy = Math.sin(angle) * speed;
+            }
+            const glowColor = glowColors[Math.floor(Math.random() * glowColors.length)];
+            const spriteIdx = Math.floor(Math.random() * 8);
+
+            return {
+              id: i, x, y, dx, dy, sizeClass, emoji, spriteIdx, glowColor, isFading: false, isSuperFast
+            };
+          });
+
+          setLights(initialLights);
+          setTimeLeft(cfg.timeLimit);
+          setIsFailed(false);
+          setIsSlowed(false);
+          setShowLevelClear(false);
+          
+          return nextLvl;
+        });
       };
 
       // Unlock hint by spending 10 coins
@@ -218,7 +281,7 @@
 
 
           {/* MAIN GAME CONTAINER AREA */}
-          <div className="flex-1 relative overflow-hidden bg-black w-full h-full bg-cover bg-center bg-no-repeat" style={{ backgroundImage: "url('genesis_bg.png')" }}>
+          <div className="flex-1 relative overflow-hidden bg-black w-full h-full bg-cover bg-center bg-no-repeat" style={{ backgroundImage: "url('1gamebg.png')" }}>
 
             {/* PHASE 1: GAME START INTRO CARD */}
             {!gameStarted && (
@@ -228,7 +291,7 @@
                 <div className="mt-4 text-center z-10">
                   <span className="text-3xl block filter drop-shadow">💡</span>
                   <h2 className="font-layton-myeongjo font-black text-base text-layton-amber mt-2">
-                    1스테이지: 빛과 어둠의 분리
+                    1스테이지: 빛과 어둠의 분리 (Lv. {currentLevel}/3)
                   </h2>
                   <p className="font-layton-myeongjo text-[9px] text-[#eddcb9] mt-1">
                     거꾸로 탐정단 제1막: 창세기
@@ -491,6 +554,25 @@
                     잠금 해제
                   </button>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Level Clear Modal */}
+          {showLevelClear && (
+            <div className="absolute inset-0 bg-black/75 z-40 flex items-center justify-center p-4">
+              <div className="bg-[#fdfaf2] border-4 border-[#8b5a2b] p-5 rounded-2xl shadow-2xl max-w-[260px] w-full text-center scale-in font-layton-myeongjo">
+                <span className="text-4xl block mb-2 filter drop-shadow">🎉</span>
+                <h3 className="font-black text-sm text-layton-amber mb-1.5">Lv.{currentLevel} 성공!</h3>
+                <p className="text-[10px] text-layton-dark leading-relaxed mb-4">
+                  가짜 빛을 모두 소거하셨습니다!<br />다음 단계는 더 많은 빛들이 기다립니다.
+                </p>
+                <button
+                  onClick={handleNextLevel}
+                  className="w-full py-2 bg-gradient-to-b from-[#e7b85e] to-[#ab7418] hover:from-[#f7cb75] hover:to-[#be8420] text-[#2c1a0c] font-black text-xs rounded-xl border-2 border-[#ffe8b5] shadow"
+                >
+                  다음 단계 도전 ➡️
+                </button>
               </div>
             </div>
           )}

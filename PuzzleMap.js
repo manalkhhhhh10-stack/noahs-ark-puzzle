@@ -21,7 +21,7 @@
           const match = nodes.find(n => n.id === unsolved.id);
           if (match) return match;
         }
-        return startNode;
+        return nodes[0];
       };
       const initialNode = getInitialNode();
       const [charPos, setCharPos] = useState({ x: initialNode.x, y: initialNode.y });
@@ -120,20 +120,34 @@
                   style={{ left: `${node.x}%`, top: `${node.y}%`, transform: 'translate(-50%, -50%)' }}
                 >
                   {/* Bobbing effect for active landmarks */}
-                  <div className={`w-12 h-12 rounded-full border-2 bg-gradient-to-b flex items-center justify-center text-2xl relative shadow-md transition-all duration-200 active:scale-90 ${
-                    isLocked 
-                      ? 'from-stone-300 to-stone-400 border-stone-500 opacity-60'
-                      : isCompleted
-                        ? 'from-[#fdf6e2] to-[#dfb973] border-yellow-600 hover:border-yellow-500 ring-2 ring-yellow-400/30'
-                        : 'from-[#ffffff] to-[#eddcb9] border-layton-brown hover:border-layton-gold hover:scale-105'
-                  } mini-float`}>
-                    
-                    {/* Landmark Emoji Icon */}
-                    <span>{isLocked ? '🔒' : node.emoji}</span>
+                  {/* Bobbing effect for active landmarks */}
+                  <div 
+                    className="w-20 h-20 rounded-full relative transition-all duration-200 hover:scale-110 active:scale-95 mini-float"
+                    style={{
+                      filter: isLocked 
+                        ? 'grayscale(1) opacity(0.45) brightness(0.6)' 
+                        : isCompleted
+                          ? 'drop-shadow(0 0 10px rgba(250, 204, 21, 0.75)) drop-shadow(0 4px 6px rgba(0,0,0,0.3))'
+                          : 'drop-shadow(0 4px 8px rgba(0,0,0,0.35))'
+                    }}
+                  >
+                    {/* Landmark Icon Image */}
+                    <img 
+                      src={`${node.id.replace('puzzle-00', 'stage')}_icon.png?v=7`} 
+                      className="w-full h-full object-contain rounded-full"
+                      alt={node.name}
+                    />
+
+                    {/* Locked overlay lock icon */}
+                    {isLocked && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-3xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">🔒</span>
+                      </div>
+                    )}
 
                     {/* Solved Stamp Badge */}
                     {isCompleted && (
-                      <span className="absolute -top-1.5 -right-1.5 bg-red-600 text-[#ffeedd] text-[7px] font-black px-1 py-0.2 rounded border border-red-500 shadow-sm uppercase scale-105 rotate-[8deg] select-none tracking-wider animate-pulse">
+                      <span className="absolute -top-1 -right-1 bg-red-600 text-[#ffeedd] text-[8px] font-black px-1.5 py-0.5 rounded border border-red-500 shadow-md uppercase scale-110 rotate-[8deg] select-none tracking-wider animate-pulse z-10">
                         ✓
                       </span>
                     )}
@@ -174,7 +188,13 @@
             {/* Dialog Level Bubble Card Modal */}
             {activeBubble && (
               <div className="absolute bottom-4 left-4 right-4 bg-layton-parchment rounded-2xl border-4 border-layton-brown p-3.5 shadow-2xl flex flex-col items-center text-center solved-banner z-30">
-<span className="text-2xl mb-1">{activeBubble.emoji}</span>
+                <div className="w-12 h-12 rounded-full border border-layton-brown/30 overflow-hidden mb-1.5 shadow-sm">
+                  <img 
+                    src={`${activeBubble.id.replace('puzzle-00', 'stage')}_icon.png?v=7`} 
+                    className="w-full h-full object-cover" 
+                    alt={activeBubble.name}
+                  />
+                </div>
                 <span className="text-[8px] bg-amber-500 text-[#2c1a0c] font-black px-2 py-0.2 rounded-full font-sans uppercase">
                   PUZZLE {activeBubble.id.replace('puzzle-', '')}
                 </span>

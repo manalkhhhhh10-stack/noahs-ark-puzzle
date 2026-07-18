@@ -44,12 +44,21 @@
         { id: 'D', name: '마을 사람 D', emoji: '👦', text: '“노아 할아버지는 정말 오랫동안 정성을 다해 방주를 단단히 만들고 있어.”' }
       ];
 
+      // 2번째 문제용 NPC 진술 리스트 (방주의 크기)
+      const NPCS_STAGE2 = [
+        { id: 'A', name: '마을 사람 A', emoji: '👨', text: '“길이 150규빗, 너비 30규빗, 높이 15규빗의 크기라고 하더군. 그 정도면 대홍수를 막을 수 있나?”' },
+        { id: 'B', name: '마을 사람 B', emoji: '👩', text: '“기록된 바로는 길이 300규빗, 너비 50규빗, 높이 30규빗으로 만드는 게 하나님의 설계 규격이야!”', isCorrect: true },
+        { id: 'C', name: '마을 사람 C', emoji: '👴', text: '“엄청나게 거대하다고 해서 길이 500규빗, 너비 100규빗, 높이 50규빗으로 짓고 있을 걸?”' },
+        { id: 'D', name: '마을 사람 D', emoji: '👦', text: '“아니야, 아주 소박하게 길이 100규빗, 너비 20규빗, 높이 10규빗이라고 들었어.”' }
+      ];
+
       const [searchedClues, setSearchedClues] = useState({});
       const [activeClue, setActiveClue] = useState(null);
       const [showNotes, setShowNotes] = useState(false);
-      const [phase, setPhase] = useState('explore'); // 'explore' | 'deduce' | 'cutscene' | 'clear'
+      const [phase, setPhase] = useState('explore'); // 'explore' | 'deduce' | 'deduce2' | 'cutscene' | 'clear'
       const [selectedNPC, setSelectedNPC] = useState(null);
       const [showLiarAlert, setShowLiarAlert] = useState(false);
+      const [showSizeAlert, setShowSizeAlert] = useState(false);
       const [cutsceneFrame, setCutsceneFrame] = useState(0);
 
       const searchedCount = Object.keys(searchedClues).filter(k => searchedClues[k]).length;
@@ -114,12 +123,22 @@
 
       const handleNPCClick = (npc) => {
         setSelectedNPC(npc);
-        if (npc.isLiar) {
-          synth.playSuccess();
-          setPhase('cutscene');
-        } else {
-          synth.playO();
-          setShowLiarAlert(true);
+        if (phase === 'deduce') {
+          if (npc.isLiar) {
+            synth.playSuccess();
+            setPhase('deduce2');
+          } else {
+            synth.playO();
+            setShowLiarAlert(true);
+          }
+        } else if (phase === 'deduce2') {
+          if (npc.isCorrect) {
+            synth.playSuccess();
+            setPhase('cutscene');
+          } else {
+            synth.playO();
+            setShowSizeAlert(true);
+          }
         }
       };
 
@@ -239,12 +258,12 @@
             </div>
           )}
 
-          {/* 2. DEDUCE PHASE (NPC 진술 판독) */}
+          {/* 2. DEDUCE PHASE (NPC 진술 판독 1단계: 거짓말쟁이) */}
           {phase === 'deduce' && (
             <div className="flex-1 w-full bg-[#fdfaf2] p-4 flex flex-col justify-between overflow-y-auto">
               
               <div className="text-center border-b border-[#825324]/30 pb-2 mb-3">
-                <span className="text-[9px] text-[#8c653f] font-bold tracking-widest uppercase">TESTIMONIAL ANALYSIS</span>
+                <span className="text-[9px] text-[#8c653f] font-bold tracking-widest uppercase">TESTIMONIAL ANALYSIS (1단계)</span>
                 <h3 className="font-black text-sm text-[#4a2e16] mt-0.5">거짓말을 하는 사람을 찾으세요!</h3>
                 <p className="text-[9px] text-gray-500">지금까지 수집한 성경 단서들을 토대로 잘못 말하는 1인을 터치하세요.</p>
               </div>
@@ -301,6 +320,81 @@
                     <button
                       onClick={() => {
                         setShowLiarAlert(false);
+                        setPhase('explore'); // 오답 시 맵으로 복귀
+                      }}
+                      className="w-full mt-4 py-2 bg-gradient-to-b from-[#ef4444] to-[#b91c1c] text-white font-black text-xs rounded-xl shadow-md transition-all active:scale-95"
+                    >
+                      단서 찾기로 돌아가기 ➡️
+                    </button>
+                  </div>
+                </div>
+              )}
+
+            </div>
+          )}
+
+          {/* 2.5 DEDUCE2 PHASE (NPC 진술 판독 2단계: 방주 크기) */}
+          {phase === 'deduce2' && (
+            <div className="flex-1 w-full bg-[#fdfaf2] p-4 flex flex-col justify-between overflow-y-auto">
+              
+              <div className="text-center border-b border-[#825324]/30 pb-2 mb-3">
+                <span className="text-[9px] text-[#8c653f] font-bold tracking-widest uppercase">ARK SIZE ANALYSIS (2단계)</span>
+                <h3 className="font-black text-sm text-[#4a2e16] mt-0.5">방주의 크기를 제대로 설명하는 사람은?</h3>
+                <p className="text-[9px] text-gray-500">단서 노트의 내용을 토대로 방주의 규격을 정확하게 설명하는 1인을 터치하세요.</p>
+              </div>
+
+              {/* NPC speech bubbles list */}
+              <div className="flex-1 flex flex-col gap-3 justify-center">
+                {NPCS_STAGE2.map(npc => (
+                  <button
+                    key={npc.id}
+                    onClick={() => handleNPCClick(npc)}
+                    className="flex items-start gap-3 bg-white border-2 border-[#cca379] hover:border-[#825324] hover:bg-[#fefcf8] rounded-2xl p-3 shadow-sm transition-all active:scale-[0.98]"
+                  >
+                    <div className="flex flex-col items-center shrink-0 w-[55px]">
+                      {/* Sprited NPC Face */}
+                      <div style={getNPCSpriteStyle(npc.id, 55)} className="rounded-xl border border-[#cca379] bg-[#fffdfa] shadow-sm overflow-hidden" />
+                      <span className="text-[8px] bg-[#825324] text-white px-1.5 py-0.5 rounded-full font-bold mt-1.5 whitespace-nowrap">
+                        {npc.name}
+                      </span>
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="text-[10px] text-[#3a2007] leading-relaxed break-keep font-medium">
+                        {npc.text}
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              {/* Lower notes & return button */}
+              <div className="mt-4 flex gap-2">
+                <button
+                  onClick={() => setShowNotes(true)}
+                  className="flex-1 py-2 bg-[#4a2e16] hover:bg-[#5a391d] text-[#e4c09d] text-[10px] font-bold rounded-xl border border-[#714624] transition-all shadow"
+                >
+                  📓 단서 노트 확인
+                </button>
+                <button
+                  onClick={() => setPhase('explore')}
+                  className="flex-1 py-2 bg-[#f3f4f6] hover:bg-gray-100 text-gray-700 text-[10px] font-bold rounded-xl border border-gray-300 transition-all shadow"
+                >
+                  🔎 단서 더 찾으러 가기
+                </button>
+              </div>
+
+              {/* Incorrect size guess alert modal */}
+              {showSizeAlert && (
+                <div className="absolute inset-0 z-30 bg-black/55 flex items-center justify-center p-4">
+                  <div className="bg-[#fff5f5] border-4 border-[#dc2626] p-5 rounded-2xl shadow-2xl text-center max-w-[250px] w-full pop-in">
+                    <span className="text-4.5xl">💡📐</span>
+                    <h4 className="font-black text-sm text-[#dc2626] mt-2">방주의 크기가 틀립니다!</h4>
+                    <p className="text-[10px] text-gray-600 mt-1 leading-relaxed">
+                      설명한 방주의 크기는 성경 기록(단서 노아의 메모)과 다릅니다. 단서 노트에서 <strong>노아의 메모</strong>를 다시 살펴보세요.
+                    </p>
+                    <button
+                      onClick={() => {
+                        setShowSizeAlert(false);
                         setPhase('explore'); // 오답 시 맵으로 복귀
                       }}
                       className="w-full mt-4 py-2 bg-gradient-to-b from-[#ef4444] to-[#b91c1c] text-white font-black text-xs rounded-xl shadow-md transition-all active:scale-95"

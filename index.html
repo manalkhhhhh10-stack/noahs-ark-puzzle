@@ -765,7 +765,7 @@
 
 
           {/* MAIN GAME CONTAINER AREA */}
-          <div className="flex-1 relative overflow-hidden bg-black w-full h-full bg-cover bg-center bg-no-repeat" style={{ backgroundImage: "url('1gamebg.png')" }}>
+          <div className="flex-1 relative overflow-hidden bg-black w-full h-full bg-cover bg-center bg-no-repeat" style={{ backgroundImage: "url('1stagebg.png')" }}>
 
             {/* PHASE 1: GAME START INTRO CARD */}
             {!gameStarted && (
@@ -1101,6 +1101,7 @@
       const [redFlash, setRedFlash]         = useState(false);
       const [catchText, setCatchText]       = useState('');
       const [finalBonusScore, setFinalBonusScore] = useState(0);
+      const [gameStarted, setGameStarted]   = useState(false); // ← 게임 시작 상태 추가
 
       const gameAreaRef  = useRef(null);
       const animFrameRef = useRef(null);
@@ -1113,6 +1114,7 @@
       const nextIdRef    = useRef(0);
       const adamXRef     = useRef(50); // adamX 동적 참조용 Ref
       const currentLevelRef = useRef(1); // ← 클로저 문제 방지용 Ref
+      const gameStartedRef = useRef(false); // ← gameStarted 참조용 Ref
 
       // Sync refs
       useEffect(() => { itemsRef.current = items; }, [items]);
@@ -1120,11 +1122,12 @@
       useEffect(() => { heartsRef.current = hearts; }, [hearts]);
       useEffect(() => { phaseRef.current = phase; }, [phase]);
       useEffect(() => { currentLevelRef.current = currentLevel; }, [currentLevel]);
+      useEffect(() => { gameStartedRef.current = gameStarted; }, [gameStarted]);
 
       // Touch/mouse Adam movement
       const handlePointerMove = useCallback((clientX) => {
         if (!gameAreaRef.current) return;
-        if (phaseRef.current !== 'playing') return; // 모달 표시 중에는 이동 차단
+        if (!gameStartedRef.current || phaseRef.current !== 'playing') return; // 게임 대기 혹은 모달 시 차단
         const rect = gameAreaRef.current.getBoundingClientRect();
         const pct  = Math.min(95, Math.max(5, ((clientX - rect.left) / rect.width) * 100));
         setAdamX(pct);
@@ -1135,12 +1138,12 @@
         const el = gameAreaRef.current;
         if (!el) return;
         const onTouchMove  = (e) => {
-          if (phaseRef.current !== 'playing') return; // playing 상태일 때만 preventDefault
+          if (!gameStartedRef.current || phaseRef.current !== 'playing') return; // 게임시작 전/모달일때 차단
           e.preventDefault();
           handlePointerMove(e.touches[0].clientX);
         };
         const onTouchStart = (e) => {
-          if (phaseRef.current !== 'playing') return; // 모달 버튼 터치가 막히지 않도록
+          if (!gameStartedRef.current || phaseRef.current !== 'playing') return;
           e.preventDefault();
           handlePointerMove(e.touches[0].clientX);
         };
@@ -1161,7 +1164,7 @@
 
       // Game loop
       useEffect(() => {
-        if (phase !== 'playing') {
+        if (!gameStarted || phase !== 'playing') {
           cancelAnimationFrame(animFrameRef.current);
           return;
         }
@@ -1169,7 +1172,7 @@
         const cfg = configRef.current;
 
         const loop = (timestamp) => {
-          if (phaseRef.current !== 'playing') return;
+          if (!gameStartedRef.current || phaseRef.current !== 'playing') return;
 
           // Spawn new item
           if (timestamp - lastSpawnRef.current > cfg.spawnInterval) {
@@ -1259,7 +1262,7 @@
 
         animFrameRef.current = requestAnimationFrame(loop);
         return () => cancelAnimationFrame(animFrameRef.current);
-      }, [phase, currentLevel]);
+      }, [phase, currentLevel, gameStarted]);
 
       const startNextLevel = () => {
         const nextLvl = currentLevel + 1;
@@ -1274,6 +1277,7 @@
         setRedFlash(false);
         setAdamX(50);
         adamXRef.current = 50;
+        setGameStarted(true);
       };
 
       const restartGame = () => {
@@ -1288,6 +1292,18 @@
         setRedFlash(false);
         setAdamX(50);
         adamXRef.current = 50;
+        setGameStarted(true);
+      };
+
+      const startGame = () => {
+        synth.playClick();
+        setScore(0); scoreRef.current = 0;
+        setHearts(3); heartsRef.current = 3;
+        setItems([]); itemsRef.current = [];
+        lastSpawnRef.current = 0;
+        setAdamX(50); adamXRef.current = 50;
+        setPhase('playing'); phaseRef.current = 'playing';
+        setGameStarted(true);
       };
 
       // Helper function to extract sprite style from 3game.png
@@ -1310,6 +1326,53 @@
 
       return (
         <div className="flex-1 w-full h-full relative overflow-hidden select-none">
+          {/* PHASE 1: GAME START INTRO CARD */}
+          {!gameStarted && (
+            <div className="absolute inset-0 bg-[#160f0a]/95 flex flex-col justify-between p-6 z-30 fade-in">
+              <div className="absolute inset-4 border border-layton-gold/20 rounded-xl pointer-events-none"></div>
+              
+              <div className="mt-4 text-center z-10">
+                <span className="text-3xl block filter drop-shadow">🍎</span>
+                <h2 className="font-layton-myeongjo font-black text-base text-layton-amber mt-2">
+                  3스테이지: 아담의 바구니 (Lv. {currentLevel}/3)
+                </h2>
+                <p className="font-layton-myeongjo text-[9px] text-[#eddcb9] mt-1">
+                  거꾸로 탐정단 제2막: 에덴의 유혹
+                </p>
+              </div>
+
+              {/* Bible Verse Area */}
+              <div className="p-3 bg-[#ebdcb9]/15 border border-[#8b5a2b]/20 rounded-xl my-1 z-10 text-center font-layton-myeongjo">
+                <p className="text-[10px] font-extrabold text-[#fdf8eb] leading-relaxed break-keep">
+                  "여자가 그 나무를 본즉 먹음직도 하고 보직도 하고 지혜롭게 할 만큼 탐스럽기도 한 나무인지라"
+                </p>
+                <span className="text-[8px] text-layton-gold font-bold mt-1 block">
+                  (창세기 3:6)
+                </span>
+              </div>
+
+              <div className="my-1 p-3 bg-[#26180c]/60 rounded-xl border border-layton-gold/10 text-left font-layton-myeongjo z-10">
+                <p className="text-[10px] text-layton-cream leading-relaxed break-keep mb-2">
+                  에덴 동산에 뱀의 간사한 속삭임과 유혹이 시작되었습니다. 아담의 바구니를 좌우로 움직여 우리 마음에 은혜를 채우고 유혹을 이겨내야 합니다.
+                </p>
+                <div className="p-2 bg-black/40 rounded-lg border border-layton-gold/20 text-[9px] text-[#eddcb9] leading-tight">
+                  <strong>💡 게임 방법:</strong><br />
+                  - 은혜 아이템(성경 📖, 기도 🙏, 사랑 ❤️)을 받아 점수를 올리세요.<br />
+                  - 유혹 아이템(선악과 🍎, 뱀 🐍, 게임기 🎮)을 받으면 하트가 깎입니다!
+                </div>
+              </div>
+
+              <div className="mb-4 z-10">
+                <button
+                  onClick={startGame}
+                  className="w-full py-2.5 bg-gradient-to-b from-[#e7b85e] to-[#ab7418] hover:from-[#f7cb75] hover:to-[#be8420] text-[#2c1a0c] font-black font-layton-myeongjo text-xs rounded-xl border-2 border-[#ffe8b5] shadow-lg transition-all duration-200 hover:scale-[1.02] active:scale-95"
+                >
+                  수수께끼 시작하기
+                </button>
+              </div>
+            </div>
+          )}
+
           <div
             ref={gameAreaRef}
             className="w-full h-full absolute inset-0 overflow-hidden"
@@ -1537,9 +1600,18 @@
       const [showLiarAlert, setShowLiarAlert] = useState(false);
       const [showSizeAlert, setShowSizeAlert] = useState(false);
       const [cutsceneFrame, setCutsceneFrame] = useState(0);
+      const [gameStarted, setGameStarted] = useState(false); // ← 게임 시작 상태 추가
 
       const searchedCount = Object.keys(searchedClues).filter(k => searchedClues[k]).length;
       const canDeduce = searchedCount >= 5;
+
+      const handleStartGame = () => {
+        synth.playClick();
+        setGameStarted(true);
+        setSearchedClues({});
+        setActiveClue(null);
+        setPhase('explore');
+      };
 
       // NPC 스프라이트 위치 정보 (4stagenpc.png 기준)
       const NPC_SPRITE = {
@@ -1631,6 +1703,53 @@
       return (
         <div className="relative w-full max-w-md mx-auto h-[600px] bg-gradient-to-b from-[#6b4724] to-[#3a220f] overflow-hidden rounded-3xl shadow-2xl flex flex-col font-layton-myeongjo text-[#5c4033] border-4 border-[#503319] select-none">
           
+          {/* PHASE 0: GAME START INTRO CARD */}
+          {!gameStarted && (
+            <div className="absolute inset-0 bg-[#160f0a]/95 flex flex-col justify-between p-6 z-30 fade-in">
+              <div className="absolute inset-4 border border-layton-gold/20 rounded-xl pointer-events-none"></div>
+              
+              <div className="mt-4 text-center z-10">
+                <span className="text-3xl block filter drop-shadow">🚢</span>
+                <h2 className="font-layton-myeongjo font-black text-base text-layton-amber mt-2">
+                  4스테이지: 방주의 거짓말쟁이
+                </h2>
+                <p className="font-layton-myeongjo text-[9px] text-[#eddcb9] mt-1">
+                  거꾸로 탐정단 제3막: 노아의 방주
+                </p>
+              </div>
+
+              {/* Bible Verse Area */}
+              <div className="p-3 bg-[#ebdcb9]/15 border border-[#8b5a2b]/20 rounded-xl my-1 z-10 text-center font-layton-myeongjo">
+                <p className="text-[10px] font-extrabold text-[#fdf8eb] leading-relaxed break-keep">
+                  "노아가 그와 같이 하여 하나님이 자기에게 명하신 대로 다 준행하였더라"
+                </p>
+                <span className="text-[8px] text-layton-gold font-bold mt-1 block">
+                  (창세기 6:22)
+                </span>
+              </div>
+
+              <div className="my-1 p-3 bg-[#26180c]/60 rounded-xl border border-layton-gold/10 text-left font-layton-myeongjo z-10">
+                <p className="text-[10px] text-layton-cream leading-relaxed break-keep mb-2">
+                  세상 사람들이 방주를 만드는 노아를 보며 웅성거리며 진실을 왜곡하고 있습니다. 흩어진 성경 단서들을 수집해 그들의 주장 중 '거짓말'과 '잘못된 사실'을 찾아내야 합니다.
+                </p>
+                <div className="p-2 bg-black/40 rounded-lg border border-layton-gold/20 text-[9px] text-[#eddcb9] leading-tight">
+                  <strong>💡 게임 방법:</strong><br />
+                  - 건설 현장의 반짝이는 물건들을 터치해 단서 5개 이상을 찾으세요.<br />
+                  - 단서 노트를 확인하며 거짓말쟁이와 올바른 크기를 추리해 지목하세요!
+                </div>
+              </div>
+
+              <div className="mb-4 z-10">
+                <button
+                  onClick={handleStartGame}
+                  className="w-full py-2.5 bg-gradient-to-b from-[#e7b85e] to-[#ab7418] hover:from-[#f7cb75] hover:to-[#be8420] text-[#2c1a0c] font-black font-layton-myeongjo text-xs rounded-xl border-2 border-[#ffe8b5] shadow-lg transition-all duration-200 hover:scale-[1.02] active:scale-95"
+                >
+                  수수께끼 시작하기
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 bg-[#523317] border-b-2 border-[#3d230d] text-white z-10">
             <button onClick={onBack} className="p-1 text-sm bg-[#784d28] hover:bg-[#8e5c32] active:scale-95 rounded-lg border border-[#9a6a3b] transition-all">
@@ -2241,7 +2360,10 @@
       const gridColsClass = levelConfig.cols === 2 ? 'grid-cols-2' : levelConfig.cols === 3 ? 'grid-cols-3' : 'grid-cols-4';
 
       return (
-        <div className="flex-1 flex flex-col bg-[#160f0a] relative select-none overflow-hidden">
+        <div 
+          className="flex-1 flex flex-col bg-[#160f0a] relative select-none overflow-hidden bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: "url('2stagebg.png')" }}
+        >
           {/* Card Game Canvas Area */}
           <div className="flex-1 p-4 flex flex-col justify-between items-center relative z-10">
             {/* Top Level indicator bar */}
@@ -3001,7 +3123,10 @@
       };
 
       return (
-        <div className="flex-1 flex flex-col justify-between relative bg-[#1e130c] text-[#f4ebd0] overflow-hidden select-none font-layton-myeongjo">
+        <div 
+          className="flex-1 flex flex-col justify-between relative bg-[#1e130c] text-[#f4ebd0] overflow-hidden select-none font-layton-myeongjo bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: "url('5stagebg.png')" }}
+        >
           
           {/* Top Info HUD Header */}
           {subPhase !== 'intro' && subPhase !== 'complete' && (

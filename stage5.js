@@ -568,7 +568,10 @@
       };
 
       return (
-        <div className="flex-1 flex flex-col justify-between relative bg-[#1e130c] text-[#f4ebd0] overflow-hidden select-none font-layton-myeongjo">
+        <div 
+          className="flex-1 flex flex-col justify-between relative bg-[#1e130c] text-[#f4ebd0] overflow-hidden select-none font-layton-myeongjo bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: "url('5stagebg.png')" }}
+        >
           
           {/* Top Info HUD Header */}
           {subPhase !== 'intro' && subPhase !== 'complete' && (

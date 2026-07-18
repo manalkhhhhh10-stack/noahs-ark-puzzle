@@ -43,12 +43,14 @@
       const configRef    = useRef(STAGE_CONFIGS[0]);
       const nextIdRef    = useRef(0);
       const adamXRef     = useRef(50); // adamX 동적 참조용 Ref
+      const currentLevelRef = useRef(1); // ← 클로저 문제 방지용 Ref
 
       // Sync refs
       useEffect(() => { itemsRef.current = items; }, [items]);
       useEffect(() => { scoreRef.current = score; }, [score]);
       useEffect(() => { heartsRef.current = hearts; }, [hearts]);
       useEffect(() => { phaseRef.current = phase; }, [phase]);
+      useEffect(() => { currentLevelRef.current = currentLevel; }, [currentLevel]);
 
       // Touch/mouse Adam movement
       const handlePointerMove = useCallback((clientX) => {
@@ -126,12 +128,13 @@
                     setCatchText(`+1 ${item.emoji}`);
                     setTimeout(() => setCatchText(''), 700);
                     synth.playN();
-                    // Check level clear
-                    const cfg2 = STAGE_CONFIGS[currentLevel - 1];
+                    // Check level clear - currentLevelRef.current 사용 (stale closure 방지)
+                    const lvl = currentLevelRef.current;
+                    const cfg2 = STAGE_CONFIGS[lvl - 1];
                     if (scoreRef.current >= cfg2.targetScore) {
                       setTimeout(() => {
                         if (phaseRef.current !== 'playing') return;
-                        if (currentLevel === 5) {
+                        if (lvl === 5) {  // currentLevelRef.current 기반으로 판단
                           const bonus = Math.max(0, Math.round(scoreRef.current - cfg2.targetScore) * 2);
                           setFinalBonusScore(bonus);
                           setPhase('allClear');

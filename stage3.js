@@ -6,8 +6,6 @@
         { level: 1, timeLimit: 30, targetScore: 8,  spawnInterval: 1300, fallSpeed: 0.60 },
         { level: 2, timeLimit: 35, targetScore: 12, spawnInterval: 1100, fallSpeed: 0.80 },
         { level: 3, timeLimit: 40, targetScore: 18, spawnInterval: 900,  fallSpeed: 1.00 },
-        { level: 4, timeLimit: 45, targetScore: 24, spawnInterval: 700,  fallSpeed: 1.25 },
-        { level: 5, timeLimit: 50, targetScore: 30, spawnInterval: 550,  fallSpeed: 1.55 },
       ];
 
       // 3game.png 스프라이트 좌표 매핑 (x1, y1, x2, y2)
@@ -143,7 +141,7 @@
                     if (scoreRef.current >= cfg2.targetScore) {
                       setTimeout(() => {
                         if (phaseRef.current !== 'playing') return;
-                        if (lvl === 5) {  // currentLevelRef.current 기반으로 판단
+                        if (lvl === STAGE_CONFIGS.length) {  // currentLevelRef.current 기반으로 판단
                           const bonus = Math.max(0, Math.round(scoreRef.current - cfg2.targetScore) * 2);
                           setFinalBonusScore(bonus);
                           setPhase('allClear');
@@ -259,7 +257,7 @@
             {/* HUD (제한시간 표시 제거) */}
             <div className="absolute top-0 inset-x-0 z-10 flex justify-between items-center px-3 py-2 bg-black/40 backdrop-blur-sm">
               <div className="text-white font-black text-xs font-layton-myeongjo">
-                Lv.{currentLevel}/5
+                Lv.{currentLevel}/{STAGE_CONFIGS.length}
               </div>
               <div className="text-white font-black text-xs font-layton-myeongjo">
                 🎯 {score}/{cfg.targetScore}
